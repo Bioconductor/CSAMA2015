@@ -1,4 +1,4 @@
-# CSAMA2015
+# CSAMA 2015 Course Material
 
 This repository contains material for CSAMA 2015: Statistics and
 Computing in Genome Data Science. Please visit the [course web

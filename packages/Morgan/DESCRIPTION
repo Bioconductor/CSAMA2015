@@ -1,0 +1,12 @@
+Package: Morgan
+Version: 0.0.1
+Title: CSAMA 2015 Lab and Lecture Resources for Martin Morgan
+Description: This package contains lab and lecture vignettes, data,
+    and short functions for use in parts of the CSAMA 2015 course lead
+    by Martin Morgan.
+Authors@R: c(
+    person("Martin", "Morgan", email="mtmorgan@fredhutch.org", role="cre"),
+    person("Sonali", "Arora", email="sarora@fredhutch.org", role="ctb"))
+Suggests: BiocGenerics, knitr, rmarkdown
+VignetteBuilder: knitr
+License: Artistic-2.0

@@ -4,7 +4,7 @@ output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Lab: Introduction to R and Bioconductor}
+  % \VignetteIndexEntry{Lab: Performance and Parallel Evaluation}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -19,50 +19,48 @@ knitr::opts_chunk$set(cache=TRUE)
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)</a><br />
 Date: 19 June, 2015
 
-# Performance
-
-## Avoiding deadly sins: efficient code
+# Performance: deadly sins
 
 The goal of this section is to learn to write correct, robust, simple
 and efficient R code. We do this through a couple of case studies.
 
-### Priorities
+## Priorities
 
-1. Correct: consistent with hand-worked examples
-   - `identical()`, `all.equal()`
+1. Correct: consistent with hand-worked examples (`identical()`, `all.equal()`)
 2. Robust: supports realistic inputs, e.g., 0-length vectors, `NA`
    values, ...
 3. Simple: easy to understand next month; easy to describe what it
    does to a colleague; easy to spot logical errors; easy to enhance.
 4. Fast, or at least reasonable given the speed of modern computers.
 
-### Strategies
+## Strategies
 
 1. Profile
    - _Look_ at the script to understand in general terms what it is doing.
    - _Step_ through the code to see how it is executed, and to gain an
      understanding of the speed of each line.
    - _Time_ evaluation of select lines or simple chunks of code with
-     `system.time()` or the [microbenchmark][] package.
+     `system.time()` or the `r CRANpkg("microbenchmark")` package.
    - _Profile_ the code with a tool that indicates how much time is
      spent in each function call or line -- the built-in `Rprof()`
-     function, or packages such as [lineprof][] or [aprof][]
+     function, or packages such as `r CRANpkg("lineprof")` or 
+     `r CRANpkg("aprof")`
 2. Vectorize -- operate on vectors, rather than explicit loops
-   ```{r vectorize}
-   x <- 1:10
-   log(x)     ## NOT for (i in seq_along) x[i] <- log(x[i])
-   ```
+    ```{r vectorize}
+    x <- 1:10
+    log(x)     ## NOT for (i in seq_along) x[i] <- log(x[i])
+    ```
 3. Pre-allocate memory, then fill in the result
-   ```{r pre-allocate}
-   result <- numeric(10)
-   result[1] <- runif(1)
-   for (i in 2:length(result))
-          result[i] <- runif(1) * result[i - 1]
-   result
-   ```
+    ```{r pre-allocate}
+    result <- numeric(10)
+    result[1] <- runif(1)
+    for (i in 2:length(result))
+           result[i] <- runif(1) * result[i - 1]
+    result
+    ```
 4. Hoist common sub-expressions outside of repeated calculations, so
    that the sub-expression is only calculated once
    - Simple, e.g., 'hoist' constant multiplications from a `for` loop
@@ -71,10 +69,12 @@ and efficient R code. We do this through a couple of case studies.
 5. Re-use existing, tested code
    - Efficient implementations of common operations -- `tabulate()`,
      `rowSums()` and friends, `%in%`, ...
-   - Efficient domain-specific implementations, e.g., [snpStats][] for
-     GWAS linear models; [limma][] for microarray linear models;
-     [edgeR][], [DESeq2][] for negative binomial GLMs relevant to
+   - Efficient domain-specific implementations, e.g., 
+     `r Biocpkg("snpStats")` for GWAS linear models; `r Biocpkg("limma")`
+     for microarray linear models; `r Biocpkg("edgeR")`, 
+     `r Biocpkg("DESeq2")` for negative binomial GLMs relevant to
      RNASeq.
+
 6. Re-think how to attack the problem
    - Different implementations
    - Alternative algorithms
@@ -82,7 +82,7 @@ and efficient R code. We do this through a couple of case studies.
 8. Use parallel evaluation
 9. Speak in tongues -- 'foreign' languages like C, Fortran
 
-### Case study: from iteration to vectorization
+## Case study: from iteration to vectorization
 
 Here's an obviously inefficient function:
 ```{r inefficient}
@@ -96,8 +96,9 @@ f0 <- function(n, a=2) {
 }
 ```
 
-Use `system.time` to investigate how this algorithm scales with `n`,
+Use `system.time()` to investigate how this algorithm scales with `n`,
 focusing on elapsed time.
+
 ```{r system-time}
 system.time(f0(10000))
 n <- 1000 * seq(1, 20, 2)
@@ -106,6 +107,7 @@ plot(t ~ n, type="b")
 ```
 
 Remember the current 'correct' value, and an approximate time
+
 ```{r correct-init}
 n <- 10000
 system.time(expected <- f0(n))
@@ -114,8 +116,9 @@ head(expected)
 
 Revise the function to hoist the common multiplier, `a`, out of the
 loop. Make sure the result of the 'optimization' and the original
-calculation are the same. Use the [microbenchmark][] package to
-compare the two versions
+calculation are the same. Use the `r CRANpkg("microbenchmark")`
+package to compare the two versions
+
 ```{r hoist}
 f1 <- function(n, a=2) {
     result <- numeric()
@@ -130,6 +133,7 @@ microbenchmark(f0(n), f1(n), times=5)
 ```
 
 Adopt a 'pre-allocate and fill' strategy
+
 ```{r preallocate-and-fill}
 f2 <- function(n, a=2) {
     result <- numeric(n)
@@ -178,9 +182,9 @@ microbenchmark(f2(n), f2c(n), times=10)
 (Repeat several times)
 
 ```{r vectorized-scale}
-n <- 100000 * seq(1, 20, 2)             # 100x larger than f0
+n <- 10 ^ (5:8)                         # 100x larger than f0
 t <- sapply(n, function(i) system.time(f4(i))[[3]])
-plot(t ~ n, type="b")
+plot(t ~ n, log="xy", type="b")
 ```
 
 Any explanations for the different pattern of response?
@@ -197,7 +201,7 @@ Lessons learned:
    can be helpful for improving performance when explicit iteration is
    required.
 
-### Case study: Choosing algorithms
+## Case study: choosing algorithms
 
 It can be very helpful to reason about an algorithm in an abstract
 sense, to gain understanding about how an operation might
@@ -219,7 +223,7 @@ f0 <- function(v) sum(v < 0)
 
 This algorithm compares each element of `vec` to zero, creating a
 logical vector as long as the original, `length(v)`. This logical
-vector is then scanned by `sum` to count the number of elements
+vector is then scanned by `sum()` to count the number of elements
 satisfying the condition.
 
 Questions:
@@ -229,14 +233,14 @@ Questions:
    would you expect this algorithm to scale with the length of `v`?
    Verify this with a simple figure.
  
-```{r algo-scan-time}
-N <- seq(1, 11, 2) * 1e6
-Time <- sapply(N, function(n) {
-    v <- sort(rnorm(n))
-    system.time(f0(v))[[3]]
-})
-plot(Time ~ N, type="b")
-```
+    ```{r algo-scan-time}
+    N <- seq(1, 11, 2) * 1e6
+    Time <- sapply(N, function(n) {
+        v <- sort(rnorm(n))
+        system.time(f0(v))[[3]]
+    })
+    plot(Time ~ N, type="b")
+    ```
 
 Is there a better algorithm, i.e., an approach that arrives at the
 same answer but takes less time (and / or space)? The vector is
@@ -276,39 +280,40 @@ Questions:
    `identical()` answers.
 2. Compare how timing of `f3()` scales with vector length.
    
-```{r algo-binary-perform}
-## identity
-identical(f0((-2):2), f3((-2):2))
-identical(f0(2:4), f3(2:4))
-identical(f0(-(4:2)), f3(-(4:2)))
-identical(f0(vec), f3(vec))
+    ```{r algo-binary-perform}
+    ## identity
+    stopifnot(
+        identical(f0((-2):2), f3((-2):2)),
+        identical(f0(2:4), f3(2:4)),
+        identical(f0(-(4:2)), f3(-(4:2))),
+        identical(f0(vec), f3(vec)))
+    
+    ## scale
+    N <- 10^(1:7)
+    
+    Time <- sapply(N, function(n) {
+        v <- sort(rnorm(n))
+        system.time(f3(v))[[3]]
+    })
+    plot(Time ~ N, type="b")
+    ```
 
-## scale
-N <- 10^(1:7)
-
-Time <- sapply(N, function(n) {
-    v <- sort(rnorm(n))
-    system.time(f3(v))[[3]]
-})
-plot(Time ~ N, type="b")
-```
-
-3. Use the [microbenchmark][] package to compare performance of `f0()`
-   and `f3()` with the original data, `vec`.
+3. Use the `r CRANpkg("microbenchmark")` package to compare
+   performance of `f0()` and `f3()` with the original data, `vec`.
 4. R code can be compiled, and compilation helps most when doing
    non-vectorized operations like those in `f3()`. Use
    `compiler::cmpfun()` to compile `f3()`, and compare the result
    using microbenchmark.
 
-```{r algo-relative}
-## relative time
-library(microbenchmark)
-microbenchmark(f0(vec), f3(vec))
-
-library(compiler)
-f3c <- cmpfun(f3)
-microbenchmark(f3(vec), f3c(vec))
-```
+    ```{r algo-relative}
+    ## relative time
+    library(microbenchmark)
+    microbenchmark(f0(vec), f3(vec))
+    
+    library(compiler)
+    f3c <- cmpfun(f3)
+    microbenchmark(f3(vec), f3c(vec))
+    ```
 
 We could likely gain additional speed by writing the binary search
 algorithm in C, but we are already so happy with the performance
@@ -356,3 +361,80 @@ Lessons learned:
    important building-blocks for more complicated code.
 
 # Parallel evaluation
+
+## Types of parallel problems
+
+### 'Embarassingly' parallel
+
+### Other
+
+Sequential, e.g., input + transform
+
+- An input 'reader' dedicated to sequentially inputting chunks of data
+- Several 'workers' responsible for transforming each chunk
+- Appropriate when work done is expensive relative to time required
+  for input
+
+Multiple program, single data
+
+- Each data chunk processed by several different 'programs'. Naive
+  example: calculating mean and median could represent two separate
+  'programs'
+- Unusual in data analysis problems
+
+## Scale of computation
+
+Cores
+
+- _Forked_ processes
+- Independent processes
+
+Clusters
+
+Clouds
+
+## _GenomicFiles_
+
+## _BiocParallel_
+
+Embarassingly parallel iteration or vectorization
+
+```{r bplapply-bpvec-FIXME}
+```
+
+Registering alternative 'back ends'
+
+### Coming soon (available in 'devel')
+
+Error handing
+
+Logging
+
+### Why not some other solution
+
+Other solutions
+
+- _parallel_ (base R)
+- `r CRANpkg("foreach")`
+- `r CRANpkg("BatchJobs")`
+
+_foreach_
+
+- A nice and intuitive interface, especially for non-R programmers.
+- Nice plug-in model, so easy to adapt code to different computing
+  environments, e.g., forked cores or independent processes
+  
+    ```{r foreach-fork-FIXME}
+    ```
+
+- The `foreach()` paradigm emphasizes iteration, which as we've seen
+  requires that the user avoid poor programming styles (e.g.,
+  pre-allocate and fill, rather than copy-and-append) and can be an
+  obstacle to vectorization
+
+_BatchJobs_
+
+- Probably a good solution for developing large-scale projects that
+  require use of clusters.
+- Each cluster is different, so very difficult to write code that is
+  portable: difficult to share your analysis with others.

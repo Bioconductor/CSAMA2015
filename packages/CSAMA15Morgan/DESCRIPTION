@@ -11,5 +11,4 @@ Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
 License: Artistic-2.0
 URL: http://www.huber.embl.de/csama/,
-    https://github.com/Bioconductor/CSAMA2015,
-    https://docs.google.com/document/d/1BcXX032YZp1_jGgB6cGKtT8s_Fsbv7oRYEGxdx7NwPs/edit
+    https://github.com/Bioconductor/CSAMA2015

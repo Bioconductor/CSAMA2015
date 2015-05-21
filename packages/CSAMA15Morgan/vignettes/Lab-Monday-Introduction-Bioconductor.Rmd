@@ -1,10 +1,10 @@
 ---
-title: "Lab: Introduction to _R_ and _Bioconductor_"
+title: "Monday Lab, part B: Introduction to _Bioconductor_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Lab: Introduction to R and Bioconductor}
+  % \VignetteIndexEntry{Monday Lab, part B: Introduction to Bioconductor}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -14,281 +14,25 @@ BiocStyle::markdown()
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(cache=TRUE)
+suppressPackageStartupMessages({
+    library(GenomicRanges)
+})
 ```
 
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
-Date: 15 June, 2015
+Date: 15 June, 2015<br />
+Back to [Monday labs](Lab-Monday-Introduction.html)
 
-# R
-
-## Refresher: working with data
-
-### Case study: ALL phenotypic data
-
-This case study servers as a refresher basic input and manipulation of
-data.
-
-Input a file that contains ALL (acute lymphoblastic leukemia) patient
-information
-
-```{r echo=TRUE, eval=FALSE}
-fname <- file.choose()   ## "ALLphenoData.tsv"
-stopifnot(file.exists(fname))
-pdata <- read.delim(fname)
-```
-```{r echo=FALSE}
-fname <- system.file(package="CSAMA15Morgan", "extdata",
-    "ALLphenoData.tsv")
-stopifnot(file.exists(fname))
-pdata <- read.delim(fname)
-```
-
-Check out the help page `?read.delim` for input options, and explore
-basic properties of the object you've created, for instance...
-
-```{r ALL-properties}
-class(pdata)
-colnames(pdata)
-dim(pdata)
-head(pdata)
-summary(pdata$sex)
-summary(pdata$cyto.normal)
-```
-
-Remind yourselves about various ways to subset and access columns of a
-data.frame
-
-```{r ALL-subset}
-pdata[1:5, 3:4]
-pdata[1:5, ]
-head(pdata[, 3:5])
-tail(pdata[, 3:5], 3)
-head(pdata$age)
-head(pdata$sex)
-head(pdata[pdata$age > 21,])
-```
-
-It seems from below that there are 17 females over 40 in the data set,
-but when sub-setting `pdata` to contain just those individuals 19 rows
-are selected. Why? What can we do to correct this?
-
-```{r ALL-subset-NA}
-idx <- pdata$sex == "F" & pdata$age > 40
-table(idx)
-dim(pdata[idx,])
-```
-
-Use the `mol.biol` column to subset the data to contain just
-individuals with 'BCR/ABL' or 'NEG', e.g.,
-
-```{r ALL-BCR/ABL-subset}
-bcrabl <- pdata[pdata$mol.biol %in% c("BCR/ABL", "NEG"),]
-```
-
-The `mol.biol` column is a factor, and retains all levels even after
-subsetting. How might you drop the unused factor levels?
-
-```{r ALL-BCR/ABL-drop-unused}
-bcrabl$mol.biol <- factor(bcrabl$mol.biol)
-```
-
-The `BT` column is a factor describing B- and T-cell subtypes
-
-```{r ALL-BT}
-levels(bcrabl$BT)
-```
-
-How might one collapse B1, B2, ... to a single type B, and likewise for T1, T2, ..., so there are only two subtypes, B and T
-
-```{r ALL-BT-recode}
-table(bcrabl$BT)
-levels(bcrabl$BT) <- substring(levels(bcrabl$BT), 1, 1)
-table(bcrabl$BT)
-```
-
-Use `xtabs()` (cross-tabulation) to count the number of samples with
-B- and T-cell types in each of the BCR/ABL and NEG groups
-
-```{r ALL-BCR/ABL-BT}
-xtabs(~ BT + mol.biol, bcrabl)
-```
-
-Use `aggregate()` to calculate the average age of males and females in
-the BCR/ABL and NEG treatment groups.
-
-```{r ALL-aggregate}
-aggregate(age ~ mol.biol + sex, bcrabl, mean)
-```
-
-Use `t.test()` to compare the age of individuals in the BCR/ABL versus
-NEG groups; visualize the results using `boxplot()`. In both cases,
-use the `formula` interface. Consult the help page `?t.test` and re-do
-the test assuming that variance of ages in the two groups is
-identical. What parts of the test output change?
-
-```{r ALL-age}
-t.test(age ~ mol.biol, bcrabl)
-boxplot(age ~ mol.biol, bcrabl)
-```
-
-### Case study: weighty matters
-
-This case study is a second walk through basic data manipulation and
-visualization skills.  We use data from the US Center for Disease
-Control's Behavioral Risk Factor Surveillance System ([BRFSS][])
-annual survey. Check out the web page for a little more
-information. We are using a small subset of this data, including a
-random sample of 10000 observations from each of 1990 and 2010.
-
-Input the data using `read.csv()`, creating a variable `brfss` to hold
-it.  Use `file.choose()` to locate the data file BRFSS-subset.csv
-
-```{r echo=TRUE, eval=FALSE}
-fname <- file.choose()   ## BRFSS-subset.csv
-stopifnot(file.exists(fname))
-brfss <- read.csv(fname)
-```
-```{r echo=FALSE}
-fname <- system.file(package="CSAMA15Morgan", "extdata",
-    "BRFSS-subset.csv")
-stopifnot(file.exists(fname))
-brfss <- read.csv(fname)
-```
-
-#### Exercises: base plotting functions
-
-1. Explore the data using `class()`, `dim()`, `head()`, `summary()`,
-   etc. Use `xtabs()` to summarize the number of males and females in
-   the study, in each of the two years.
-
-2. Use `aggregate()` to summarize the average weight in each sex and
-   year.
-  
-3. Create a scatterplot showing the relationship between the square
-   root of weight and height, using the `plot()` function and the
-   `main` argument to annotate the plot. Note the transformed
-   Y-axis. Experiment with different plotting symbols (try the command
-   `example(points)` to view different points).
-
-   ```{r brfss-simple-plot}
-   plot(sqrt(Weight) ~ Height, brfss, main="All Years, Both Sexes")
-   ```
-   
-4. Color the female and male points differently. To do this, use the
-   `col` argument to `plot()`. Provide as a value to that argument a
-   vector of colors, subset by `brfss$Sex`.
-
-5. Create a subset of the data containing only observations from
-   2010.
-
-   ```{r brfss-subset}
-   brfss2010 <- brfss[brfss$Year == "2010", ]
-   ```
-
-6. Create the figure below (two panels in a single figure). Do this by
-   using the `par()` function with the `mfcol` argument before calling
-   `plot()`. You'll need to create two more subsets of data, perhaps
-   when you are providing the data to the function `plot`.
-
-   ```{r brfss-pair-plot}
-   opar <- par(mfcol=c(1, 2))
-   plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Female", ],
-        main="2010, Female")
-   plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Male", ],
-        main="2010, Male")
-   par(mfcol=c(1, 1))
-   ```
-
-7. Plotting large numbers of points means that they are often
-   over-plotted, potentially obscuring important patterns. Experiment
-   with arguments to `plot()` to address over-plotting, e.g.,
-   `pch='.'` or `alpha=.4`. Try using the `smoothScatter()` function
-   (the data have to be presented as `x` and `y`, rather than as a
-   formula). Try adding the [hexbin][] library to your R session
-   (using `library()`) and creating a `hexbinplot()`.
-
-#### Exercises: Trellis graphics and the _lattice_ package
-
-R has a number of additional plotting facilities, both as part of the
-'base' distribution and user-contributed packages. The _lattice_
-package adopts a particular philosophy about the presentation of data,
-and can be a very effective visualization tool.
-
-1.  Use `library()` to load the _lattice_ package.
-
-    ```{r lattice}
-    library(lattice)
-    ```
-
-2. Create the following figure using the `xyplot()` function with a
-   formula and the `brfss2010` data. The formula is `sqrt(Weight) ~
-   Height | Sex`, which can be read as `square root of Weight as a
-   function of Height, conditioned on Sex'.
-
-   ```{r lattice-conditioning}
-   xyplot(sqrt(Weight) ~ Height | Sex, brfss2010)
-   ```
-
-3. Add a background grid and a regression line to each panel using the
-   argument `type=c('p', 'g', 'r')`; change the width (`lwd`) and
-   color (`col.line`) of the regression line. For some hints on other
-   arguments, see the help pages `?xyplot` (for overall structure of
-   the plot) and `?panel.xyplot` (for how each 'panel' of data is
-   plotted).
-  
-4. Create the following figure. Use the `densityplot()` function with
-   the formula `~ sqrt(Weight)`. The `group=Sex` function argument
-   creates separate lines for each sex. Be sure to use
-   `plot.points=FALSE` to avoid a `rug' of points at the base of the
-   figure. Can you add a key (legend)?
-   
-   ```{r lattice-density}
-   densityplot(~sqrt(Weight), brfss2010, group=Sex, plot.points=FALSE)
-   ```
-
-5. Create the figure below using the `bwplot` function. The formula
-   requires that `Year` be coerced to a `factor`, `factor(Year)`.
-
-    ```{r lattice-bwplot}
-    bwplot(sqrt(Weight) ~ factor(Year) | Sex, brfss)
-    ```
-  
-6.  Create the Figure below, a _violin_ plot, using `bwplot()` and the
-    `panel` argument set to `panel.violin`. from `?bwplot` we learn
-    that `panel` is a function that determines how each panel is
-    drawn; the details for controling the violin panel plot are
-    described on the help page `?panel.violin`.
-
-    ```{r lattice-violin}
-    bwplot(sqrt(Weight) ~ factor(Year) | Sex, brfss, panel=panel.violin)
-    ```
-
-7. (Advanced) We can write our own `panel` argument to _lattice_
-   functions to influence how each panel is displayed. Here we add a
-   point at the median age and weight.
-
-    ```{r lattice-panel}
-    xyplot(sqrt(Weight) ~ Height|Sex, brfss2010,
-        panel = function(x, y, ...) {
-            panel.xyplot(x, y, ...)
-            panel.points(median(x, na.rm=TRUE), median(y, na.rm=TRUE), 
-                cex=2, pch=20, col="red")
-        },
-        type=c("p", "g", "r"), lwd=2, col.line="red", xlim=c(120, 210))
-    ```
-
-# _Bioconductor_
-
-## Making progress: classes, methods, and packages
+# Making progress: classes, methods, and packages
 
 This section focuses on classes, methods, and packages, with the goal
 being to learn to navigate the help system and interactive discovery
 facilities.
 
-### Motivation
+## Motivation
 
 Sequence analysis is specialized
 - Large data needs to be processed in a memory- and time-efficient manner
@@ -306,7 +50,7 @@ _methods_ operate on the classes to perform useful functions.  Classes
 and methods are placed together and distributed as _packages_ so that
 we can all benefit from the hard work and tested code of others.
 
-### Case study: IRanges and GRanges
+## Case study: IRanges and GRanges
 
 The [IRanges][] package defines an important class for specifying
 integer ranges, e.g.,
@@ -395,17 +139,17 @@ vignette(package="GenomicRanges")
 vignette(package="GenomicRanges", "GenomicRangesHOWTOs")
 ```
 
-## Annotations
+# Annotations
 
 (see Rnw file)
 
-### Genes
+## Genes
 
-### Genomes
+## Genomes
 
-### _AnnotationHub_
+## _AnnotationHub_
 
-## A sequence analysis package tour
+# A sequence analysis package tour
 
 This very open-ended topic points to some of the most prominent
 Bioconductor packages for sequence analysis. Use the opportunity in

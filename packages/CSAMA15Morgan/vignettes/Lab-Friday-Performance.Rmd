@@ -1,0 +1,358 @@
+---
+title: "Lab: Performance and Parallel Evaluation"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  % \VignetteIndexEntry{Lab: Introduction to R and Bioconductor}
+  % \VignetteEngine{knitr::rmarkdown}
+---
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+Authors: Martin Morgan (<a
+  href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
+  Arora (<a
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+Date: 19 June, 2015
+
+# Performance
+
+## Avoiding deadly sins: efficient code
+
+The goal of this section is to learn to write correct, robust, simple
+and efficient R code. We do this through a couple of case studies.
+
+### Priorities
+
+1. Correct: consistent with hand-worked examples
+   - `identical()`, `all.equal()`
+2. Robust: supports realistic inputs, e.g., 0-length vectors, `NA`
+   values, ...
+3. Simple: easy to understand next month; easy to describe what it
+   does to a colleague; easy to spot logical errors; easy to enhance.
+4. Fast, or at least reasonable given the speed of modern computers.
+
+### Strategies
+
+1. Profile
+   - _Look_ at the script to understand in general terms what it is doing.
+   - _Step_ through the code to see how it is executed, and to gain an
+     understanding of the speed of each line.
+   - _Time_ evaluation of select lines or simple chunks of code with
+     `system.time()` or the [microbenchmark][] package.
+   - _Profile_ the code with a tool that indicates how much time is
+     spent in each function call or line -- the built-in `Rprof()`
+     function, or packages such as [lineprof][] or [aprof][]
+2. Vectorize -- operate on vectors, rather than explicit loops
+   ```{r vectorize}
+   x <- 1:10
+   log(x)     ## NOT for (i in seq_along) x[i] <- log(x[i])
+   ```
+3. Pre-allocate memory, then fill in the result
+   ```{r pre-allocate}
+   result <- numeric(10)
+   result[1] <- runif(1)
+   for (i in 2:length(result))
+          result[i] <- runif(1) * result[i - 1]
+   result
+   ```
+4. Hoist common sub-expressions outside of repeated calculations, so
+   that the sub-expression is only calculated once
+   - Simple, e.g., 'hoist' constant multiplications from a `for` loop
+   - Higher-level, e.g., use `lm.fit()` rather than repeatedly fitting
+     the same design matrix.
+5. Re-use existing, tested code
+   - Efficient implementations of common operations -- `tabulate()`,
+     `rowSums()` and friends, `%in%`, ...
+   - Efficient domain-specific implementations, e.g., [snpStats][] for
+     GWAS linear models; [limma][] for microarray linear models;
+     [edgeR][], [DESeq2][] for negative binomial GLMs relevant to
+     RNASeq.
+6. Re-think how to attack the problem
+   - Different implementations
+   - Alternative algorithms
+7. Compile your script with the byte compiler
+8. Use parallel evaluation
+9. Speak in tongues -- 'foreign' languages like C, Fortran
+
+### Case study: from iteration to vectorization
+
+Here's an obviously inefficient function:
+```{r inefficient}
+f0 <- function(n, a=2) {
+    ## stopifnot(is.integer(n) && (length(n) == 1) &&
+    ##           !is.na(n) && (n > 0))
+    result <- numeric()
+    for (i in seq_len(n))
+        result[[i]] <- a * log(i)
+    result
+}
+```
+
+Use `system.time` to investigate how this algorithm scales with `n`,
+focusing on elapsed time.
+```{r system-time}
+system.time(f0(10000))
+n <- 1000 * seq(1, 20, 2)
+t <- sapply(n, function(i) system.time(f0(i))[[3]])
+plot(t ~ n, type="b")
+```
+
+Remember the current 'correct' value, and an approximate time
+```{r correct-init}
+n <- 10000
+system.time(expected <- f0(n))
+head(expected)
+```
+
+Revise the function to hoist the common multiplier, `a`, out of the
+loop. Make sure the result of the 'optimization' and the original
+calculation are the same. Use the [microbenchmark][] package to
+compare the two versions
+```{r hoist}
+f1 <- function(n, a=2) {
+    result <- numeric()
+    for (i in seq_len(n))
+        result[[i]] <- log(i)
+    a * result
+}
+identical(expected, f1(n))
+
+library(microbenchmark)
+microbenchmark(f0(n), f1(n), times=5)
+```
+
+Adopt a 'pre-allocate and fill' strategy
+```{r preallocate-and-fill}
+f2 <- function(n, a=2) {
+    result <- numeric(n)
+    for (i in seq_len(n))
+        result[[i]] <- log(i)
+    a * result
+}
+identical(expected, f2(n))
+microbenchmark(f0(n), f2(n), times=5)
+```
+
+Use an `*apply()` function to avoid having to explicitly pre-allocate,
+and make opportunities for vectorization more apparent.
+
+```{r use-apply}
+f3 <- function(n, a=2)
+    a * sapply(seq_len(n), log)
+
+identical(expected, f3(n))
+microbenchmark(f0(n), f2(n), f3(n), times=10)
+```
+
+Now that the code is presented in a single line, it is apparent that
+it could be easily vectorized.  Seize the opportunity to vectorize it:
+
+```{r use-vectorize}
+f4 <- function(n, a=2)
+    a * log(seq_len(n))
+identical(expected, f4(n))
+microbenchmark(f0(n), f3(n), f4(n), times=10)
+```
+
+Returning to our explicit iteration `f2()`, in these situations it
+can be helpful to compile the code to a more efficient
+representation. Do this using the compiler package.
+
+```{r use-compiler}
+library(compiler)
+f2c <- cmpfun(f2)
+n <- 10000
+identical(f2(n), f2c(n))
+microbenchmark(f2(n), f2c(n), times=10)
+```
+
+`f4()` definitely seems to be the winner. How does it scale with `n`?
+(Repeat several times)
+
+```{r vectorized-scale}
+n <- 100000 * seq(1, 20, 2)             # 100x larger than f0
+t <- sapply(n, function(i) system.time(f4(i))[[3]])
+plot(t ~ n, type="b")
+```
+
+Any explanations for the different pattern of response?
+
+Lessons learned:
+
+1. Vectorizing offers a huge improvement over iteration
+2. Pre-allocate-and-fill is very helpful when explicit iteration is
+   required.
+3. `*apply()` functions help avoid need for explicit pre-allocation
+   and make opportunities for vectorization more apparent. This may
+   come at a small performance cost, but  is generally worth it
+4. Hoisting common sub-expressions and using the _compiler_ package
+   can be helpful for improving performance when explicit iteration is
+   required.
+
+### Case study: Choosing algorithms
+
+It can be very helpful to reason about an algorithm in an abstract
+sense, to gain understanding about how an operation might
+scale. Here's an interesting problem, taken from
+[StackOverflow](http://stackoverflow.com/questions/16213029): Suppose
+one has a very long **sorted** vector
+
+```{r algo-init}
+vec <- c(seq(-100,-1,length.out=1e6), rep(0,20), seq(1,100,length.out=1e6))
+```
+
+with the simple goal being to identify the number of values less than
+zero. The original post and many responses suggested a variation of
+scanning the vector for values less than zero, then summing
+
+```{r algo-scan}
+f0 <- function(v) sum(v < 0)
+```
+
+This algorithm compares each element of `vec` to zero, creating a
+logical vector as long as the original, `length(v)`. This logical
+vector is then scanned by `sum` to count the number of elements
+satisfying the condition.
+
+Questions:
+
+1. How many vectors of length `v` need to be allocated for this algorithm?
+2. Based on the number of comparisons that need to be performed, how
+   would you expect this algorithm to scale with the length of `v`?
+   Verify this with a simple figure.
+ 
+```{r algo-scan-time}
+N <- seq(1, 11, 2) * 1e6
+Time <- sapply(N, function(n) {
+    v <- sort(rnorm(n))
+    system.time(f0(v))[[3]]
+})
+plot(Time ~ N, type="b")
+```
+
+Is there a better algorithm, i.e., an approach that arrives at the
+same answer but takes less time (and / or space)? The vector is
+sorted, and we can take advantage of that by doing a _binary
+search_. The algorithm is surprisingly simple: create an index to the
+minimum (first) element, and the maximum (last) element. Check to
+see if the element half way between is greater than or equal to
+zero. If so, move the maximum index to that point. Otherwise, make
+that point the new minimum. Repeat this procedure until the minimum
+index is no longer less than the maximum index.
+
+```{r algo-binary}
+f3 <- function(x, threshold=0) {
+    imin <- 1L
+    imax <- length(x)
+    while (imax >= imin) {
+        imid <- as.integer(imin + (imax - imin) / 2)
+        if (x[imid] >= threshold)
+            imax <- imid - 1L
+        else
+            imin <- imid + 1L
+    }
+    imax
+}
+```
+
+Approximately half of the possible values are discarded each
+iteration, so we expect on average to arrive at the end after about
+`log2(length(v))` iterations -- the algorithm scales with the log of
+the length of `v`, rather than with the length of `v`, and no long
+vectors are created. These difference become increasingly important as
+the length of `v` becomes long.
+
+Questions:
+
+1. Verify with simple data that `f3()` and `f0()` result in
+   `identical()` answers.
+2. Compare how timing of `f3()` scales with vector length.
+   
+```{r algo-binary-perform}
+## identity
+identical(f0((-2):2), f3((-2):2))
+identical(f0(2:4), f3(2:4))
+identical(f0(-(4:2)), f3(-(4:2)))
+identical(f0(vec), f3(vec))
+
+## scale
+N <- 10^(1:7)
+
+Time <- sapply(N, function(n) {
+    v <- sort(rnorm(n))
+    system.time(f3(v))[[3]]
+})
+plot(Time ~ N, type="b")
+```
+
+3. Use the [microbenchmark][] package to compare performance of `f0()`
+   and `f3()` with the original data, `vec`.
+4. R code can be compiled, and compilation helps most when doing
+   non-vectorized operations like those in `f3()`. Use
+   `compiler::cmpfun()` to compile `f3()`, and compare the result
+   using microbenchmark.
+
+```{r algo-relative}
+## relative time
+library(microbenchmark)
+microbenchmark(f0(vec), f3(vec))
+
+library(compiler)
+f3c <- cmpfun(f3)
+microbenchmark(f3(vec), f3c(vec))
+```
+
+We could likely gain additional speed by writing the binary search
+algorithm in C, but we are already so happy with the performance
+improvement that we won't do that! 
+
+It is useful to ask what is lost by `f3()` compared to `f0()`. For
+instance, does the algorithm work on character vectors? What about
+when the vector contains `NA` values? How are ties at 0 treated?
+
+`findInterval()` is probably a better built-in way to solve the
+original problem, and generalizes to additional situations. The idea
+is to take the query that we are interested in, `0`, and find the
+interval specified by `vec` in which it occurs.
+
+```{r findInterval}
+f4 <- function(v, query=0)
+    findInterval(query - .Machine$double.eps, v)
+
+identical(f0(vec), f4(vec))
+microbenchmark(f0(vec), f3(vec), f4(vec))
+```
+
+The fact that it is flexible and well tested means that it would often
+be preferred to `f3()`, even though it is less speedy. For instance,
+compare the time it takes to query 10000 different points using `f3` and
+iteration, versus `findInterval` and vectorization.
+
+```{r findInterval-several}
+threshold <- rnorm(10000)
+identical(sapply(threshold, f3, x=vec), f4(vec, threshold))
+microbenchmark(sapply(x, f3), f4(vec, x))
+```
+
+Some R functions that implement efficient algorithms are `sort()`
+(including radix sort), `match()` (hash table look-up), and
+`tabulate()`; these can be useful in your own code. 
+
+Lessons learned:
+
+1. Choice of algorithm can be very important
+2. Implementing classical algorithms (like binary search) can be a
+   rewarding learning experience even when, at the end of the day, it
+   may be better to use existing functions.
+3. The built-in R functions that implement efficient algorithms can be
+   important building-blocks for more complicated code.
+
+# Parallel evaluation

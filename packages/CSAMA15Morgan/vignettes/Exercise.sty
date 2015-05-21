@@ -1,0 +1,12 @@
+%% Question, Exercise, Solution
+\usepackage{theorem}
+\theoremstyle{break} 
+\newtheorem{Ext}{Exercise}
+\newtheorem{Question}{Question}
+
+\newenvironment{Exercise}{
+  \renewcommand{\labelenumi}{\alph{enumi}.}\begin{Ext}%
+}{\end{Ext}}
+\newenvironment{Solution}{%
+  \noindent\textbf{Solution:}\renewcommand{\labelenumi}{\alph{enumi}.}%
+}{\bigskip}

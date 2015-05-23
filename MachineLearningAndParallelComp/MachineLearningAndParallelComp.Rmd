@@ -1,5 +1,6 @@
 ---
-title: "Machine Learning and Parallel Computing"
+title: "Brixen 2015 Lab: Machine Learning and Parallel Computing"
+author: "Wolfgang Huber and Martin Morgan"
 output: 
  BiocStyle::html_document:
     toc: true
@@ -9,10 +10,8 @@ output:
 library("knitr")
 library("Biobase")
 library("Hiiragi2013")
-library("dplyr")
 library("glmnet")
 library("mlr")
-library("pec")
 library("ggplot2")
 ```
 ```{r style, echo = FALSE, results = 'asis'}
@@ -21,7 +20,19 @@ opts_chunk$set(error = FALSE, warning = FALSE, cache = TRUE, autodep = TRUE)
 options(width=100)
 ```
 
+## What you will learn in this lab
+
+We will perform a binary classification of transcriptome (cDNA) samples from single cells
+based on their microarray expression data, into two groups. 
+We learn how to use cross-validation to get a reasonable 
+estimate of the misclassification error (without overfitting bias). Moreover, we learn how to use cross-validation to optimise tuning parameters on which the classifier algorithm depends. These two cross-validation loops have independent objectives and are performed in a nested manner: inside, the CV-based optimisation of the tuning parameters, outside, the CV-based estimation of the classifier performance.
+
+There many different classification algorithms, based on different mathematical ideas, and some more or less suitable for different types of data and applications. They come in different R packages and often have their own ideosyncratic ways how they input data and parameters, and how they return results.
+
+We use the `mlr` package, which provides uniform wrappers around many of these algorithms, so that we can swap them out and try different ones without constantly having to change our code. `mlr` also provides a powerful meta-language to describe and execute the (possibly nested) cross-validation schemes.  
+
 ## Load example data, from `Hiiragi2013`.
+
 These are microarray expression profiles of single cells from mouse embryos at stages E3.25, E3.5 and E4.5.
 See Y. Ohnishi, W. Huber et al., Cell-to-cell expression variability followed by signal reinforcement 
 progressively segregates early mouse lineages. Nature Cell Biology, 16:27 (2014). 
@@ -35,8 +46,8 @@ table( x$sampleGroup )
 `x` is an `r class(x)` object that was obtained
 from the Affymetrix raw data by RMA normalization.
 
-Convert into a data.frame as expected by `mlr` functions
-Here we also do independent filtering to remove likely uninformative variables
+Convert into a data.frame as expected by `mlr` functions.
+Here we also do independent filtering to remove likely uninformative variables. One motivation for doing this is that probes with very small variation might be the ones most affected (relatively) by batch effects.
 
 ```{r selfeat, fig.width = 4, fig.height = 3}
 rowV <- data.frame( v = rowVars(exprs(x)) )
@@ -52,7 +63,7 @@ with( embryoSingleCells, table( tg ) )
 ```
 
 ## Set up the machine learning problem 
-`mlr` requires us to create a series of objects that tells it what we want to do.
+`mlr` requires us to create a series of objects that tells it what we want it to do.
 First, we need to define the task:
 ```{r task}
 task <- makeClassifTask( id = "Hiiragi", data = embryoSingleCells, target = "tg" )
@@ -69,7 +80,7 @@ rdesc <- makeResampleDesc( method = "CV", stratify = TRUE, iters = 12 )
 ```
 
 Do the resampling:
-```{r dores}
+```{r dores, results = "hide"}
 r <- resample(learner = lrn, task = task, resampling = rdesc )
 ```
 
@@ -84,23 +95,25 @@ ggplot( r$pred$data, aes( x = truth, y = prob.E3.25, colour = response ) ) + geo
 
 ## Wrapped learning: internal cross-validation to set tuning parameters
 
-The learner `glmnet` depends on two parameters: the regularisation penalty `lambda`, and the parameter `alpha` that controls the respective weights of the L_1 and L_2 regularisation terms. So far, we used the defaults, but maybe we can do better.
+The learner `glmnet` depends on two parameters: the regularisation penalty $\lambda$, and the parameter $\alpha$ (`alpha`) that controls the respective weights of the $L_1$ and $L_2$ regularisation terms. So far, we used the defaults, but maybe we can do better.
 
 Another parameter in the above data preprocessing pipeline was the choice of `selectionThreshold`, which we made by eye-balling the histogram. But we could also choose this in an optimal manner (and avoid overfitting by doing this via cross-validation).
 
-In the function `glmnet.predict`, the chosen value of `lambda` that is used for prediction is called `s`, and that's also how it is called in the `mlr` wrappers.
+In the function `glmnet.predict`, the chosen value of $\lambda$ that is used for prediction is called `s`, and that's also how it is called in the `mlr` wrappers.
+
+In the code below, we state that we want to tune `s` between 0.001 and 0.1 in 6 steps, and that we want to use an inner loop of 10-fold cross-validation for the tuning. Note that this latter parameter setting has nothing to do with the object `rdesc` that we created above, and which describes the outer cross-validation. 
 
 ```{r wrap1}
 tuningLrn <- makeTuneWrapper(lrn, 
   resampling = makeResampleDesc("CV", iters = 10,  stratify = TRUE), 
   par.set = makeParamSet(makeNumericParam("s", lower = 0.001, upper = 0.1)), 
-  control = makeTuneControlGrid(resolution = 10) )
+  control = makeTuneControlGrid(resolution = 6) )
 ```
 
-```{r wrap2}
+```{r wrap2, results = "hide"}
 r2 <- resample(learner = tuningLrn, task = task, resampling = rdesc )
 ```
-
+This code runs for a while. 
 
 ```{r confu2, fig.width = 3, fig.height = 3}
 r2
@@ -108,9 +121,13 @@ with( r2$pred$data, table(truth, response) )
 ggplot( r2$pred$data, aes( x = truth, y = prob.E3.25, colour = response ) ) + geom_point()
 ```
 
-## Exercise
+## Exercises
 
-Extend the above tuning approach to optimising over `alpha` and `selectionThreshold` as well.
+- How can you find out which genes are the most discriminating across the two classes ?
+- Extend the classification to the other Embryonic days. Can you classify each of the 
+`r length(unique( x$sampleGroup ))` sample groups (`x$sampleGroup`, see above)?
+- Extend the above tuning approach to optimising over `alpha` and `selectionThreshold` as well.
+
 
 ## Session Info
 ```{r sessionInfo, results = "markup"}

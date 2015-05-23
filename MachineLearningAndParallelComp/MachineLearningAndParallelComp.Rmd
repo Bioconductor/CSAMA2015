@@ -70,16 +70,16 @@ rdesc <- makeResampleDesc( method = "CV", stratify = TRUE, iters = 12 )
 
 Do the resampling:
 ```{r dores}
-r <- resample(learner = lrn, task = task, resampling = rdesc, show.info = FALSE)
+r <- resample(learner = lrn, task = task, resampling = rdesc )
 ```
 
 This code runs for a while. Now we are ready to explore the results.
 Get the mean misclassification error:
-```{r confu}
+```{r confu, fig.width = 3, fig.height = 3}
 r
 head( r$pred$data )
 with( r$pred$data, table(truth, response) )
-ggplot( r$pred$data, aes( x = truth, y = prob.E3.25 ) )
+ggplot( r$pred$data, aes( x = truth, y = prob.E3.25, colour = response ) ) + geom_point()
 ```
 
 ## Wrapped learning: internal cross-validation to set tuning parameters
@@ -88,22 +88,29 @@ The learner `glmnet` depends on two parameters: the regularisation penalty `lamb
 
 Another parameter in the above data preprocessing pipeline was the choice of `selectionThreshold`, which we made by eye-balling the histogram. But we could also choose this in an optimal manner (and avoid overfitting by doing this via cross-validation).
 
+In the function `glmnet.predict`, the chosen value of `lambda` that is used for prediction is called `s`, and that's also how it is called in the `mlr` wrappers.
+
 ```{r wrap1}
-ctrl <- makeTuneControlGrid(resolution = 2)
-ps <- makeParamSet(makeNumericParam("s", lower = 0.001, upper = 0.1))
-tune.wrap <- makeTuneWrapper(lrn, rdesc, par.set = ps, control = ctrl)
+tuningLrn <- makeTuneWrapper(lrn, 
+  resampling = makeResampleDesc("CV", iters = 10,  stratify = TRUE), 
+  par.set = makeParamSet(makeNumericParam("s", lower = 0.001, upper = 0.1)), 
+  control = makeTuneControlGrid(resolution = 10) )
 ```
 
 ```{r wrap2}
-r2 <- resample(learner = lrn, task = task, resampling = rdesc, show.info = FALSE)
+r2 <- resample(learner = tuningLrn, task = task, resampling = rdesc )
 ```
 
 
+```{r confu2, fig.width = 3, fig.height = 3}
+r2
+with( r2$pred$data, table(truth, response) )
+ggplot( r2$pred$data, aes( x = truth, y = prob.E3.25, colour = response ) ) + geom_point()
+```
 
-TO DO: resample to optimise alpha and lambda,
-then resample to estimate MCE
+## Exercise
 
-
+Extend the above tuning approach to optimising over `alpha` and `selectionThreshold` as well.
 
 ## Session Info
 ```{r sessionInfo, results = "markup"}

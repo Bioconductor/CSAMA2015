@@ -1,0 +1,111 @@
+---
+title: "Machine Learning and Parallel Computing"
+output: 
+ BiocStyle::html_document:
+    toc: true
+---
+
+```{r, echo = TRUE, results = "hide", message = FALSE, error = FALSE}
+library("knitr")
+library("Biobase")
+library("Hiiragi2013")
+library("dplyr")
+library("glmnet")
+library("mlr")
+library("pec")
+library("ggplot2")
+```
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown() 
+opts_chunk$set(error = FALSE, warning = FALSE, cache = TRUE, autodep = TRUE)
+options(width=100)
+```
+
+## Load example data, from `Hiiragi2013`.
+These are microarray expression profiles of single cells from mouse embryos at stages E3.25, E3.5 and E4.5.
+See Y. Ohnishi, W. Huber et al., Cell-to-cell expression variability followed by signal reinforcement 
+progressively segregates early mouse lineages. Nature Cell Biology, 16:27 (2014). 
+
+```{r load}
+data( "x", package = "Hiiragi2013" )
+x
+table( x$sampleGroup )
+```
+
+`x` is an `r class(x)` object that was obtained
+from the Affymetrix raw data by RMA normalization.
+
+Convert into a data.frame as expected by `mlr` functions
+Here we also do independent filtering to remove likely uninformative variables
+
+```{r selfeat, fig.width = 4, fig.height = 3}
+rowV <- data.frame( v = rowVars(exprs(x)) )
+ggplot( rowV, aes( x = log10(v) ) ) + geom_bar( binwidth = 0.05, fill = "skyblue" )
+selectionThreshold <- 10^(-0.5)
+selectedFeatures  <- ( rowV$v > selectionThreshold )
+embryoSingleCells <- data.frame( t(exprs(x)[selectedFeatures, ]), check.names = TRUE )
+```
+
+```{r}
+embryoSingleCells$tg <- factor( ifelse( x$Embryonic.day == "E3.25", "E3.25", "other") )
+with( embryoSingleCells, table( tg ) )
+```
+
+## Set up the machine learning problem 
+`mlr` requires us to create a series of objects that tells it what we want to do.
+First, we need to define the task:
+```{r task}
+task <- makeClassifTask( id = "Hiiragi", data = embryoSingleCells, target = "tg" )
+```
+
+Define the learner:
+```{r lrn}
+lrn = makeLearner( "classif.glmnet", predict.type = "prob" )
+```
+
+Define the resampling strategy:
+```{r res}
+rdesc <- makeResampleDesc( method = "CV", stratify = TRUE, iters = 12 )
+```
+
+Do the resampling:
+```{r dores}
+r <- resample(learner = lrn, task = task, resampling = rdesc, show.info = FALSE)
+```
+
+This code runs for a while. Now we are ready to explore the results.
+Get the mean misclassification error:
+```{r confu}
+r
+head( r$pred$data )
+with( r$pred$data, table(truth, response) )
+ggplot( r$pred$data, aes( x = truth, y = prob.E3.25 ) )
+```
+
+## Wrapped learning: internal cross-validation to set tuning parameters
+
+The learner `glmnet` depends on two parameters: the regularisation penalty `lambda`, and the parameter `alpha` that controls the respective weights of the L_1 and L_2 regularisation terms. So far, we used the defaults, but maybe we can do better.
+
+Another parameter in the above data preprocessing pipeline was the choice of `selectionThreshold`, which we made by eye-balling the histogram. But we could also choose this in an optimal manner (and avoid overfitting by doing this via cross-validation).
+
+```{r wrap1}
+ctrl <- makeTuneControlGrid(resolution = 2)
+ps <- makeParamSet(makeNumericParam("s", lower = 0.001, upper = 0.1))
+tune.wrap <- makeTuneWrapper(lrn, rdesc, par.set = ps, control = ctrl)
+```
+
+```{r wrap2}
+r2 <- resample(learner = lrn, task = task, resampling = rdesc, show.info = FALSE)
+```
+
+
+
+TO DO: resample to optimise alpha and lambda,
+then resample to estimate MCE
+
+
+
+## Session Info
+```{r sessionInfo, results = "markup"}
+sessionInfo()
+```

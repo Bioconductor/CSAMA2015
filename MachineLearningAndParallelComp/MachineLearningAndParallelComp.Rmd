@@ -80,7 +80,7 @@ rdesc <- makeResampleDesc( method = "CV", stratify = TRUE, iters = 12 )
 ```
 
 Do the resampling:
-```{r dores, results = "hide"}
+```{r dores, results = "hide", message = FALSE}
 r <- resample(learner = lrn, task = task, resampling = rdesc )
 ```
 
@@ -110,7 +110,7 @@ tuningLrn <- makeTuneWrapper(lrn,
   control = makeTuneControlGrid(resolution = 6) )
 ```
 
-```{r wrap2, results = "hide"}
+```{r wrap2, results = "hide", message = FALSE}
 r2 <- resample(learner = tuningLrn, task = task, resampling = rdesc )
 ```
 This code runs for a while. 

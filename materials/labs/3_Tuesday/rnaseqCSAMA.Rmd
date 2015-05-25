@@ -1,35 +1,9 @@
-<!--
- %\VignetteEngine{knitr::knitr}
--->
-
-<!--
- %\VignetteEngine{knitr::knitr}
--->
-
-<!--
- %\VignetteEngine{knitr::knitr}
--->
-
-<!--
- %\VignetteEngine{knitr::knitr}
--->
-
-<!--
- %\VignetteEngine{knitr::knitr}
--->
-
 ---
-Author: Michael Love
-Date: March 27, 2015
+Author: Michael Love, Simon Anders
+Date: May 25, 2015
 ---
 
-<!-- rmarkdown v1 -->
-<!--
-%\VignetteEngine{knitr::knitr}
-%\VignetteIndexEntry{RNA-Seq workflow at the gene level}
--->
-
-<!-- to compile this: library("knitr"); knit2html("rnaseqGene.Rmd") -->
+<!-- to compile this: library("knitr"); knit2html("rnaseqCSAMA.Rmd") -->
 
 <!--
      # a list of all required libraries:
@@ -42,12 +16,12 @@ Date: March 27, 2015
   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
-# RNA-Seq workflow: gene-level exploratory analysis and differential expression 
+# End-to-end RNA-Seq workflow
 
 Michael Love [1], Simon Anders [2], Wolfgang Huber [2]
 
 [1] Department of Biostatistics, Dana-Farber Cancer Institute and
-Harvard School of Public Health, Boston, US; 
+Harvard T.H. Chan School of Public Health, Boston, US; 
 
 [2] European Molecular Biology Laboratory (EMBL), Heidelberg, Germany.
 
@@ -65,9 +39,9 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE)
 * [Visual exploration](#eda)
 * [Differential expression](#de)
 * [Diagnostic plots](#diagnostic)
+* [Other methods](#methods)
 * [Annotation](#annotate)
-* [Accounting for unknown batches](#batch)
-* [Time series experiments](#time)
+* [ReportingTools](#report)
 
 ## Introduction
 
@@ -1227,6 +1201,12 @@ and hence independent. The independent filtering software used inside
 contains a reference to a paper describing the statistical foundation
 for independent filtering.
 
+<a id="methods"></a>
+
+## Running other methods
+
+**TODO**
+
 <a id="annotate"></a>
 
 ## Annotation: adding gene names
@@ -1251,6 +1231,8 @@ To get a list of all available key types, use:
 ```{r}
 columns(org.Hs.eg.db)
 ```
+
+**TODO**: here use mapIds() from the *AnnotationDbi* package.
 
 Converting IDs with the native functions from the *AnnotationDbi*
 package is a bit cumbersome, so we provide the following convenience
@@ -1301,215 +1283,17 @@ processed by *write.csv*.
 write.csv(as.data.frame(resOrdered), file="results.csv")
 ```
 
+<a id="report"></a>
+
+## ReportingTools
+
 Another more sophisticated package for exporting results from various
 Bioconductor analysis packages is the `r Biocpkg("ReportingTools")` package.
 *ReportingTools* will automatically generate dynamic HTML documents,
 including links to external databases using gene identifiers
 and boxplots summarizing the normalized counts across groups.
-See the *ReportingTools* vignettes for more details.
 
-## Plotting fold changes in genomic space
-
-If we have used the *summarizeOverlaps* function to count the reads,
-then our *DESeqDataSet* object is built on top of ready-to-use
-Bioconductor objects specifying the genomic location of the genes. We
-can therefore easily plot our differential expression results in
-genomic space.  While the *results* function by default outputs a
-*DataFrame*, using the `format` argument, we can ask for *GRanges* or
-*GRangesList* output.
-
-```{r}
-(resGR <- results(dds, format="GRanges"))
-resGR$symbol <- convertIDs(names(resGR), "ENSEMBL", "SYMBOL", org.Hs.eg.db)
-```
-
-We will use the `r Biocpkg("Gviz")` package for plotting the GRanges
-and associated metadata: the log fold changes due to dexamethasone treatment.
-
-```{r}
-library("Gviz")
-```
-
-The following code chunk specifies a window of 1 million base pairs
-upstream and downstream from the gene with the smallest *p* value.
-We create a subset of our full results, for genes within the window
-which have a fold change (exclude genes with no counts). We add the
-gene symbol as a name, if the symbol exists or is not duplicated in
-our subset.
-
-```{r}
-window <- resGR[topGene] + 1e6
-strand(window) <- "*"
-hasLFC <- !is.na(resGR$log2FoldChange)
-resGRsub <- resGR[resGR %over% window & hasLFC]
-naOrDup <- is.na(resGRsub$symbol) | duplicated(resGRsub$symbol)
-resGRsub$group <- ifelse(naOrDup, names(resGRsub), resGRsub$symbol)
-```
-
-We create a vector specifying if the genes in this subset had a low
-false discovery rate. 
-
-```{r}
-sig <- factor(ifelse(is.na(resGRsub$padj) | resGRsub$padj > .1,"notsig","sig"))
-```
-
-We can then plot the results using `r Biocpkg("Gviz")` functions. We
-create an axis track specifying our location in the genome, a track
-which will show the genes and their names, colored by significance,
-and a data track which will draw vertical bars showing the moderated
-log fold change produced by *DESeq2*, which we know are only large
-when the effect is well supported by the information in the counts.
-
-```{r gvizplot}
-options(ucscChromosomeNames=FALSE)
-g <- GenomeAxisTrack()
-a <- AnnotationTrack(resGRsub, name="gene ranges", feature=sig)
-d <- DataTrack(resGRsub, data="log2FoldChange", baseline=0,
-               type="h", name="log2 fold change", strand="+")
-plotTracks(list(g,d,a), groupAnnotation="group", notsig="lightblue", sig="pink")
-```
-
-<a id="batch"></a>
-
-## Removing hidden batch effects
-
-Suppose we did not know that there were different cell lines involved
-in the experiment, only that there was treatment with
-dexamethasone. The cell line effect on the counts then would represent
-some hidden and unwanted variation which might be affecting
-many or all of the genes in the dataset. We can use statistical
-methods from the `r Biocpkg("sva")` package to
-detect such groupings of the samples, and then we can add these to the
-*DESeqDataSet*'s design, in order to account for them. The SVA
-software uses the term *surrogate variables* for the estimated
-variables which we want to account for in our analysis.
-
-```{r}
-library("sva")
-```
-
-Below we get a matrix of counts for which the average count across
-samples is larger than 1. As we described above, we are trying to
-recover any hidden batch effects, supposing that we do not know the
-cell line information. So we use a full model matrix with the
-\Robject{dex} variable, and a reduced, or null, model matrix with only
-an intercept term. Finally we specify that we want to estimate 2
-surrogate variables. For more information read the help at `?svaseq`.
-
-```{r}
-idx <- rowMeans(counts(dds)) > 1
-dat <- counts(dds)[idx,]
-mod <- model.matrix(~ dex, colData(dds))
-mod0 <- model.matrix(~ 1, colData(dds))
-svseq <- svaseq(dat, mod, mod0, n.sv=2)
-svseq$sv
-```
-
-Because we actually do know the cell lines, we can see how well the
-SVA method did at recovering these variables: 
-
-```{r svaplot}
-par(mfrow=c(2,1),mar=c(5,5,1,1))
-stripchart(svseq$sv[,1] ~ dds$cell,vertical=TRUE)
-abline(h=0)
-stripchart(svseq$sv[,2] ~ dds$cell,vertical=TRUE)
-abline(h=0)
-```
-
-Finally, in order to use SVA to remove any effect on the counts from
-our surrogate variables, we simply add these two as columns to the
-*DESeqDataSet* and add them to the design.
-
-```{r}
-ddssva <- dds
-ddssva$SV1 <- svseq$sv[,1]
-ddssva$SV2 <- svseq$sv[,2]
-design(ddssva) <- ~ SV1 + SV2 + dex
-ddssva <- DESeq(ddssva)
-head(results(ddssva), 4)
-```
-
-<a id="time"></a>
-
-## Time series experiments
-
-*DESeq2* can be used to analyze time series experiments, for example
- to find those genes which react in a condition specific manner over
- time. Here we demonstrate a basic time series analysis with the
- `r Biocexptpkg("fission")` data package,
-which contains gene counts for an RNA-Seq time course of fission
-yeast. The yeast were exposed to oxidative stress, and half of the
-samples contain a deletion of the gene *atf21*.
-We use a design which models the strain difference at time 0,
- the difference over time, and any strain-specific differences over
- time (the interaction term `strain:minute`).
-
-```{r}
-library("fission")
-data("fission")
-ddsTC <- DESeqDataSet(fission, ~ strain + minute + strain:minute)
-```
-
-The following chunk performs a likelihood ratio test, where we remove
-the strain-specific differences over time. Genes with small *p* values
-from this test are those which, at one or more time points after time
-0 showed a strain-specific effect. Note therefore that this will not
-give small *p* values to genes which moved up or down over time in the
-same way in both strains. 
-
-```{r}
-ddsTC <- DESeq(ddsTC, test="LRT", reduced = ~ strain + minute)
-resTC <- results(ddsTC)
-resTC$symbol <- mcols(ddsTC)$symbol
-head(resTC[order(resTC$pvalue),],4)
-```
-
-This is just one of the tests which can be applied to time
-series data. Another option would be to model the counts as a
-smooth function of time, and to include an interaction term of the
-condition with the smooth function. It is possible to build such a
-model using spline basis functions within R.
-
-We can plot the counts for the groups over time using
-`r CRANpkg("ggplot2")`, for the gene with the smallest *p* value,
-testing for condition-dependent time profile and accounting for
-differences at time 0. Keep in mind that the interaction terms are the
-difference between the two groups at a given time after accounting for
-the difference at time 0.
-
-```{r fissioncounts}
-data <- plotCounts(ddsTC, which.min(resTC$pvalue), 
-                   intgroup=c("minute","strain"), returnData=TRUE)
-ggplot(data, aes(x=minute, y=count, color=strain, group=strain)) + 
-  geom_point() + stat_smooth(se=FALSE,method="loess") +  scale_y_log10()
-```
-
-Wald tests for the log2 fold changes at individual time points can be
-investigated using the `test` argument to *results*:
-
-```{r}
-resultsNames(ddsTC)
-res30 <- results(ddsTC, name="strainmut.minute30", test="Wald")
-res30[which.min(resTC$pvalue),]
-```
-
-We can further more cluster significant genes by their profiles.
-
-```{r}
-betas <- coef(ddsTC)
-colnames(betas)
-```
-
-```{r fissionheatmap}
-library("pheatmap")
-topGenes <- head(order(resTC$pvalue),20)
-mat <- betas[topGenes, -c(1,2)]
-thr <- 3 # threshold for plotting
-mat[mat < -thr] <- -thr
-mat[mat > thr] <- thr
-pheatmap(mat, breaks=seq(from=-thr, to=thr, length=101),
-         cluster_col=FALSE)
-```
+**TODO** add this
 
 ## Session information
 

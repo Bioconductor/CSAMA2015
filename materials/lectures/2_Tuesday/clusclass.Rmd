@@ -1,0 +1,114 @@
+---
+title: "Clustering and classification"
+author: Vince Carey
+date: May 22, 2005
+output: 
+  ioslides_presentation:
+    incremental: true
+    fig_height: 4
+---
+
+# Basic concept {.build}
+
+- Organisms are assayed on multiple features
+- _Variability_ in feature measures exhibits _structure_
+- For some grouping, within-group variation is smaller than between-group variation
+- Finding and interpreting such groupings is our goal
+
+# Classic example: gene expression in the cell cycle of budding yeast
+
+## a data extract: _S. cerevisiae_ colony synchronized with alpha pheromone
+
+```{r lky}
+library(yeastCC)
+data(spYCCES)
+alp = spYCCES[, spYCCES$syncmeth=="alpha"]
+rbind(time=alp$time[1:5],exprs(alp)[1:5,1:5])
+```
+
+- G=`r nrow(exprs(alp))` genes comprise rows, N=`r ncol(exprs(alp))` timed samples comprise columns
+
+## A pattern of interest
+
+- Define a _basal oscillator_ to be a gene with expression varying with the cell cycle in a specific way
+    - for alpha-synchronized colony, cell cycle period is about 66 minutes
+    
+- Theoretical expression trajectory
+```{r lkba,fig=TRUE,echo=FALSE}
+times=1:132
+bo = sin(2*pi*times/66)
+plot(times, bo, type="l")
+```
+
+## Can you give a mathematical definition of a basal oscillator?
+
+## Formalism
+ 
+- $t$ denotes time (in minutes) elapsed from synchronization
+- $X_g(t)$ denotes reported expression of gene $g$ at time $t$
+- $m_g = \min_t X_g(t)$, $M_g = \max_t X_g(t)$
+- $U_g(t) = 2 \times [\frac{X_g(t) - m_g}{M_g-m_g} - 0.5]$ is
+signed fractional excursion (sfe) of gene $g$ at time $t$
+    - if $g$ is at minimal reported value at $t$, $U_g(t) = -1$
+    - if $g$ is at maximal reported value at $t$, $U_g(t) = +1$
+- if $g$ is a basal oscillator, what is the form of $U_g(t)$?
+
+## One possible form for $U_g(t)$ for $g$ a basal oscillator
+
+- $U_g(t) = \sin(2 \pi t/ 66)$
+- Why?
+
+## Measuring similarity of observed expression trajectories to the basal oscillator pattern
+
+- High-school analytic geometry: distance between two points in $R^3$
+- $p_1 = (x_1, y_1, z_1)$, $p_2 = (x_2, y_2, z_2)$
+- $\Delta x = x_1 - x_2$, etc.
+- $d(p_1, p_2) = \sqrt{(\Delta x)^2 + (\Delta y)^2 + (\Delta z)^2}$
+- "Euclidean distance"
+
+## Application of the distance concept
+
+- What is the dimension of the space in which a yeast gene expression trajectory resides?
+- How can we define the distance between a given gene's trajectory and that corresponding to the basal oscillator pattern?  Assumptions?
+-
+```{r f2,fig=TRUE,echo=FALSE}
+suppressWarnings({
+times=1:132
+bo = sin(2*pi*times/66)
+ea = exprs(alp)
+unitize = function(x) {
+ tmp = (x-min(x,na.rm=TRUE))/(max(x,na.rm=TRUE)-min(x,na.rm=TRUE))
+ 2*(tmp-.5)
+}
+uea = t(apply(ea,1,unitize))
+plot(times, bo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[1,], lty=2)
+legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[1]))
+})
+```
+
+## Computing distances to basal oscillator pattern
+
+```{r dodis,fig=TRUE}
+bot = function(tim) sin(2*pi*tim/66)
+bo = bot(alp$time)
+d2bo = function(x) sqrt(sum((x-bo)^2))
+suppressWarnings({ds = apply(uea, 1, d2bo)})
+md = which.min(ds)
+md
+summary(ds)
+```
+
+## The nearest gene
+
+```{r lkgcl, fig=TRUE}
+plot(alp$time, bo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[md,], lty=2)
+legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[md]))
+```
+
+## The distribution of distances
+
+```{r lkh,fig=TRUE}
+hist(ds, xlab="Euclidean distance to basal oscillator pattern")
+```

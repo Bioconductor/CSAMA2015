@@ -8,14 +8,21 @@ output:
     fig_height: 4
 ---
 
-# Basic concept {.build}
+```{r setup,echo=FALSE,results="hide"}
+suppressPackageStartupMessages({
+library(yeastCC)
+library(cluster)
+})
+```
+
+## Basic concept {.build}
 
 - Organisms are assayed on multiple features
 - _Variability_ in feature measures exhibits _structure_
 - For some grouping, within-group variation is smaller than between-group variation
 - Finding and interpreting such groupings is our goal
 
-# Classic example: gene expression in the cell cycle of budding yeast
+## Classic example: gene expression in the cell cycle of budding yeast
 
 ## a data extract: _S. cerevisiae_ colony synchronized with alpha pheromone
 
@@ -35,9 +42,11 @@ rbind(time=alp$time[1:5],exprs(alp)[1:5,1:5])
     
 - Theoretical expression trajectory
 ```{r lkba,fig=TRUE,echo=FALSE}
-times=1:132
+times=0:132
 bo = sin(2*pi*times/66)
 plot(times, bo, type="l")
+abline(h=0,lty=2,col="gray")
+abline(v=66,lty=2,col="gray")
 ```
 
 ## Can you give a mathematical definition of a basal oscillator?
@@ -89,7 +98,7 @@ legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[1]))
 
 ## Computing distances to basal oscillator pattern
 
-```{r dodis,fig=TRUE}
+```{r dodis}
 bot = function(tim) sin(2*pi*tim/66)
 bo = bot(alp$time)
 d2bo = function(x) sqrt(sum((x-bo)^2))
@@ -111,4 +120,117 @@ legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[md]))
 
 ```{r lkh,fig=TRUE}
 hist(ds, xlab="Euclidean distance to basal oscillator pattern")
+```
+
+## "Top ten!"
+
+```{r lkgcl2, fig=TRUE}
+todo = names(sort(ds))[1:10]
+plot(alp$time, bo, type="l", xlab="time", ylab="sfe")
+for (md in todo) lines(alp$time, uea[md,], lty=2, col="gray")
+#legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[md]))
+```
+
+## Is it a cluster?
+
+- Recall the definition:
+    - _Variability_ in feature measures exhibits _structure_
+    - For some grouping, within-group variation is smaller than between-group variation
+    - Can we make this more precise?
+    - Form some arbitrarily chosen groups of size ten
+    - The code:
+```{r dospl}
+allf = featureNames(alp)
+set.seed(2345)
+scramble = function(x) sample(x, size=length(x), replace=FALSE) 
+cands = scramble(setdiff(allf, todo))[1:40]
+sc = split(cands, gids <- rep(2:5,each=10))
+ml = lapply(sc, function(x) uea[x,])
+```
+
+## The arbitrary groups {.flexbox .vcenter}
+
+```{r getgr, fig=TRUE,echo=FALSE,fig.height=5}
+par(mfrow=c(2,2), mar=c(4,2,2,2))
+for (i in 1:4) {
+ plot(alp$time, ml[[i]][1,], type="l", lty=2, col="gray", main=paste("group", i+1), xlab="time", ylab="sfe")
+ for (j in 2:9) lines(alp$time, ml[[i]][j,], type="l", lty=2, col="gray")
+}
+```
+
+## The silhouette plot
+
+```{r dof,fig=TRUE,echo=FALSE}
+alld = c(todo, cands)
+labs = c(rep(1,10), gids)
+d = dist(uea[alld,])
+s = silhouette(labs, d) 
+plot(s)
+```
+
+## Definition from ?silhouette
+```
+   For each observation i, the _silhouette width_ s(i) is defined as
+     follows:
+     Put a(i) = average dissimilarity between i and all other points of
+     the cluster to which i belongs (if i is the _only_ observation in
+     its cluster, s(i) := 0 without further calculations).  For all
+     _other_ clusters C, put d(i,C) = average dissimilarity of i to all
+     observations of C.  The smallest of these d(i,C) is b(i) := \min_C
+     d(i,C), and can be seen as the dissimilarity between i and its
+     “neighbor” cluster, i.e., the nearest one to which it does _not_
+     belong.  Finally,
+
+                   s(i) := ( b(i) - a(i) ) / max( a(i), b(i) ).         
+     
+     ‘silhouette.default()’ is now based on C code donated by Romain
+     Francois (the R version being still available as
+     ‘cluster:::silhouette.default.R’).
+```
+
+## Recap
+- A target pattern was defined, using knowledge of the cell cycle period
+- Expression patterns were transformed to conform to the dynamic
+range of the target pattern
+- A distance function was defined and genes ordered by proximity to
+target
+- A group of ten genes nearest to target trajectory was identified
+and compared to arbitrarily formed groups using silhouette widths
+- Transformation, Distance, and Comparison are fundamental elements
+of all cluster analysis
+   - but a fixed target pattern is not so common in genomics
+   - (compare handwriting or speech waveform analysis)
+
+## Quiz
+- Give the mathematical definition of the counterbasal oscillator pattern,
+that has value 1 at time 0 and returns to 1 at 66 minutes
+- How many steps to determine the mean silhouette width for the
+ten genes closest to the counterbasal pattern?
+
+## Solution
+
+```{r dodis2,fig=FALSE}
+cbot = function(tim) cos(2*pi*tim/66)
+cbo = cbot(alp$time)
+d2cbo = function(x) sqrt(sum((x-cbo)^2))
+suppressWarnings({cds = apply(uea, 1, d2cbo)})
+cmd = which.min(cds)
+cmd
+summary(cds)
+```
+
+## The most counterbasal gene
+
+```{r lkgcl3, fig=TRUE}
+plot(alp$time, cbo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[cmd,], lty=2)
+legend(20,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[cmd]))
+```
+
+## "Top ten!"
+
+```{r getmoc,fig=TRUE}
+ctodo = names(sort(cds)[1:10])
+plot(alp$time, cbo, type="l", xlab="time", ylab="sfe")
+for (md in ctodo) lines(alp$time, uea[md,], lty=2, col="gray")
 ```

@@ -1,0 +1,11 @@
+Package: tissuesGeneExpression
+Title: tissuesGeneExpression
+Version: 1.0.1
+Date: 2015-05-27
+Author: Michael Love and Rafael Irizarry
+Maintainer: Michael Love <mlove@jimmy.harvard.edu>
+Description: Subset of gene expression data from the following papers: 
+    http://www.ncbi.nlm.nih.gov/pubmed/17906632
+    http://www.ncbi.nlm.nih.gov/pubmed/21177656
+    http://www.ncbi.nlm.nih.gov/pubmed/24271388
+License: GPL-3

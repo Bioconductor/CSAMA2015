@@ -20,6 +20,7 @@ library(grid)
 library(png)
 library(limma)
 library(rafalib)
+library(fpc)
 })
 })
 ```
@@ -37,6 +38,9 @@ library(rafalib)
     - Our goals are to find, evaluate, and interpret such rules
 
 ## Two basic approaches to clustering, agglomerative and divisive {.flexbox .vcenter}
+
+- Fisher's iris data: three labeled species, four anatomic features
+
 ```{r dofigagg,fig=TRUE,echo=FALSE,fig.height=3.9}
 par(mfrow=c(1,2))
 pp = pam(dist(iris[,1:4]), k=3)
@@ -45,7 +49,6 @@ myplclust(mhc(dist(iris[,1:4]), method="average"), main="hclust/euc/avg on iris"
 plot(pp, which=1, main="pam on iris, k=3")
 ```
 
-- Fisher's iris data: three labeled species, four anatomic features
 
 ## Genomic example: gene expression in the cell cycle of budding yeast
 
@@ -379,3 +382,12 @@ server = function(input, output, session) {
 
 shinyApp(ui=ui, server=server)
 ```
+
+## Upshots
+
+- 4-parameter regression has capacity to identify various oscillatory patterns
+- $F$ statistic is large for oscillating genes
+- We can obtain a set of oscillators by thresholding $F$ or considering statistical significance
+- Are there clusters among the oscillators?
+
+##

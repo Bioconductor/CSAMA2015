@@ -7,8 +7,7 @@ Date: May 25, 2015
 
 <!--
      # a list of all required libraries:
-     reqlibs = sub(".*library\\(\"(.*?)\"\\).*","\\1",
-	               grep("library\\(",readLines("rnaseqGene.Rmd"),value=TRUE))
+     reqlibs = sub(".*library\\(\"(.*?)\"\\).*","\\1",grep("library\\(",readLines("rnaseqCSAMA.Rmd"),value=TRUE))
      find.package(reqlibs)
 -->
 
@@ -29,7 +28,7 @@ Harvard T.H. Chan School of Public Health, Boston, US;
 library("BiocStyle")
 library("knitr")
 options(width=100)
-opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE)
+opts_chunk$set(message = FALSE, error = TRUE, warning = TRUE)
 ```
 
 ## Contents
@@ -39,9 +38,9 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE)
 * [Visual exploration](#eda)
 * [Differential expression](#de)
 * [Diagnostic plots](#diagnostic)
-* [Other methods](#methods)
 * [Annotation](#annotate)
 * [ReportingTools](#report)
+* [Ease of exchanging methods](#methods)
 
 ## Introduction
 
@@ -231,7 +230,7 @@ seqinfo(bamfiles[1])
 Next, we need to read in the gene model which will be used for
 counting reads. We will read the gene model from a
 [GTF file](http://www.ensembl.org/info/website/upload/gff.html), using
-*makeTranscriptDbFromGFF* from the `r Biocpkg("GenomicFeatures")`
+*makeTxDbFromGFF* from the `r Biocpkg("GenomicFeatures")`
 package. GTF files can be downloaded from
 Ensembl's FTP site or other gene model repositories.
 A *TranscriptDb* object is a database which can be used to
@@ -242,7 +241,7 @@ There are other options for constructing a *TranscriptDB*.
 For the *known genes* track from the UCSC Genome Browser,
 one can use the pre-built Transcript DataBase:
 `r Biocannopkg("TxDb.Hsapiens.UCSC.hg19.knownGene")`.
-The *makeTranscriptDbFromBiomart* function can be used to automatically
+The *makeTxDbFromBiomart* function can be used to automatically
 pull a gene model from Biomart. 
 
 ```{r}
@@ -251,7 +250,7 @@ library("GenomicFeatures")
 
 ```{r}
 gtffile <- file.path(dir,"Homo_sapiens.GRCh37.75_subset.gtf")
-(txdb <- makeTranscriptDbFromGFF(gtffile, format="gtf"))
+(txdb <- makeTxDbFromGFF(gtffile, format="gtf"))
 ```
 
 The following line produces a *GRangesList* of all the exons grouped by gene.
@@ -1133,7 +1132,6 @@ and plot a heatmap. We provide the column side colors to help identify
 the treated samples (in blue) from the untreated samples (in grey).
 
 ```{r genescluster}
-library(pheatmap)
 mat <- assay(rld)[ topVarGenes, ]
 mat <- mat - rowMeans(mat)
 df <- as.data.frame(colData(rld)[,c("cell","dex")])
@@ -1203,12 +1201,6 @@ and hence independent. The independent filtering software used inside
 *DESeq2* comes from the `r Biocpkg("genefilter")` package, which
 contains a reference to a paper describing the statistical foundation
 for independent filtering.
-
-<a id="methods"></a>
-
-## Running other methods
-
-**TODO**
 
 <a id="annotate"></a>
 
@@ -1296,7 +1288,81 @@ Bioconductor analysis packages is the `r Biocpkg("ReportingTools")` package.
 including links to external databases using gene identifiers
 and boxplots summarizing the normalized counts across groups.
 
+```{r}
+library("ReportingTools")
+```
+
 **TODO** add this
+
+<a id="methods"></a>
+
+## Ease of exchanging methods
+
+```{r}
+# careful when filtering if groups are not balanced
+filter <- rowMeans(assay(airway)) > 5
+airwayFilt <- airway[ filter, ]
+
+dds <- DESeqDataSet(airwayFilt, design = ~ cell + dex)
+dds <- DESeq(dds)
+res <- results(dds, independentFiltering=FALSE)
+
+library("edgeR")
+coldata <- as.data.frame(colData(dds))
+design <- model.matrix(~ cell + dex, data=coldata)
+dgel <- DGEList(assay(airwayFilt))
+dgel <- calcNormFactors(dgel)
+dgel <- estimateGLMCommonDisp(dgel,design=design)
+dgel <- estimateGLMTrendedDisp(dgel,design=design)
+dgel <- estimateGLMTagwiseDisp(dgel,design=design)
+edgerfit <- glmFit(dgel,design=design)
+lrt <- glmLRT(edgerfit, coef=5)
+tt <- topTags(lrt, n=nrow(dgel), sort.by="none")
+
+library("limma")
+dgel.voom <- DGEList(assay(airwayFilt))
+dgel.voom <- calcNormFactors(dgel.voom)
+v <- voom(dgel.voom,design,plot=FALSE)
+vfit <- lmFit(v,design)
+vfit <- eBayes(vfit)
+lvtt <- topTable(vfit, coef=5, n=nrow(dgel.voom), sort.by="none")
+
+alpha <- 0.01
+table("deseq2"=res$padj < alpha, "edger"=tt$table$FDR < alpha, "limma"=lvtt$adj.P.Val < alpha)
+
+bartab <- function(x,y,z,names,skipNone=FALSE,...) {
+  x <- factor(x,c("FALSE","TRUE"))
+  y <- factor(y,c("FALSE","TRUE"))
+  z <- factor(z,c("FALSE","TRUE"))
+  tabs <- as.vector(table(x, y, z))
+  names(tabs) <- c("none",names[1],names[2],paste(names[1:2],collapse="+"),
+                   names[3],paste(names[c(1,3)],collapse="+"),
+                   paste(names[2:3],collapse="+"),"all")
+  tabs <- tabs[c(1,2,3,5,4,6,7,8)]
+  if (skipNone) {
+    tabs <- tabs[-1]
+  }
+  barplot(tabs, ...)
+}
+
+bartab(res$padj < alpha, tt$table$FDR < alpha, lvtt$adj.P.Val < alpha, c("DESeq2","edgeR","limma"))
+
+plot(rank(res$padj),rank(tt$table$FDR))
+plot(rank(res$padj),rank(lvtt$adj.P.Val))
+plot(rank(tt$table$FDR),rank(lvtt$adj.P.Val))
+
+lfc <- 0.5
+resLFC <- results(dds, independentFiltering=FALSE, lfcThreshold=lfc)
+
+tr <- glmTreat(edgerfit, coef=5, lfc=lfc)
+ttLFC <- topTags(tr, n=nrow(dgel), sort.by="none")
+
+vtr <- treat(vfit, lfc=lfc)
+lvttLFC <- topTreat(vtr, coef=5, n=nrow(dgel.voom), sort.by="none")
+
+alpha <- 0.1
+bartab(resLFC$padj < alpha, ttLFC$table$FDR < alpha, lvttLFC$adj.P.Val < alpha, c("DESeq2","edgeR","limma"),skipNone=TRUE)
+```
 
 ## Session information
 

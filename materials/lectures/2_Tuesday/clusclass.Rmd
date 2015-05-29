@@ -12,6 +12,7 @@ runtime: shiny
 ```{r setup,echo=FALSE,results="hide"}
 suppressPackageStartupMessages({
 suppressWarnings({
+library(BiocStyle)
 library(shiny)
 library(rmarkdown)
 library(yeastCC)
@@ -21,6 +22,7 @@ library(png)
 library(limma)
 library(rafalib)
 library(fpc)
+library(impute)
 })
 })
 ```
@@ -342,6 +344,8 @@ format_num <- function(col) {
 top100f = as.data.frame(lapply(top100, format_num), stringsAsFactors=FALSE)
 top100f = cbind(orf=rownames(top100),top100f)
 rownames(top100f) = rownames(top100)
+d100 = impute.knn(exprs(alp)[rownames(top100),])$data
+rownames(d100) = rownames(top100)
 top100f[,2] = as.numeric(top100f[,2])
 top100f[,3] = as.numeric(top100f[,3])
 top100f[,4] = as.numeric(top100f[,4])
@@ -383,11 +387,57 @@ server = function(input, output, session) {
 shinyApp(ui=ui, server=server)
 ```
 
-## Upshots
+## Tuning hclust: dendrogram structure
 
-- 4-parameter regression has capacity to identify various oscillatory patterns
-- $F$ statistic is large for oscillating genes
-- We can obtain a set of oscillators by thresholding $F$ or considering statistical significance
-- Are there clusters among the oscillators?
+### Distance and fusion method selection
 
-##
+```{r echo = FALSE}
+showHC = function() {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+ 
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="complete"))
+          ),
+  fluidRow(plotOutput("hcl")) 
+ ), server= function(input, output, session) {
+    output$hcl <- renderPlot(
+      plot(hclust( dist(d100, method=input$distmeth),
+           method=input$fusemeth), main=paste0("top 100 osc., dist ",
+             input$distmeth, " aggmeth ", input$fusemeth ))
+      ) } )
+}
+showHC()
+```
+
+## Projection with labels
+
+```{r echo = FALSE}
+showPROJ = function() {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+ 
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="complete")),
+   column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9))
+          ),
+  fluidRow(plotOutput("proj")) 
+ ), server= function(input, output, session) {
+    pc = prcomp(d100)$x
+    output$proj <- renderPlot({
+    hc = hclust( dist(d100, method=input$distmeth),
+           method=input$fusemeth )
+    ct = cutree(hc, k=input$numclus)
+    pairs(pc[,1:4], col=ct, pch=19)
+      }) } )
+}
+showPROJ()
+```

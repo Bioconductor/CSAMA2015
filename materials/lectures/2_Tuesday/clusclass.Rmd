@@ -442,7 +442,7 @@ showPROJ = function() {
 showPROJ()
 ```
 
-## Characteristic traces
+## Characteristic traces, raw expression data
 
 ```{r echo = FALSE}
 showTRACE = function() {
@@ -461,16 +461,24 @@ showTRACE = function() {
  ), server= function(input, output, session) {
     pc = prcomp(d100)$x
     output$proj <- renderPlot({
-    par(mfrow=c(3,3), mar=c(3,2,1,1))
+    if (input$numclus==2) mfr = c(1,2)
+    else if (input$numclus<=4) mfr = c(2,2)
+    else if (input$numclus<=6) mfr = c(2,3)
+    else if (input$numclus<=9) mfr = c(3,3)
+    par(mfrow=mfr, mar=c(3,2,1,1))
     hc = hclust( dist(d100, method=input$distmeth),
            method=input$fusemeth )
+sink(tempfile())
+cb <- clusterboot(dist(d100, meth=input$distmeth), clustermethod=hclustCBI, method=input$fusemeth, k=input$numclus, showplots=FALSE, scaling=FALSE) 
+sink(NULL)
     ct = cutree(hc, k=input$numclus)
     sdd = split(data.frame(d100), ct)
     for (i in 1:input$numclus) {
       matplot(alp$time, t(sdd[[i]]), type="l", ylim=c(-2.5,2.5),
-        xlab="time", ylab="sfe")
+        xlab="time", ylab="sfe", main=paste0("Cl. ", i, "; n=", nrow(sdd[[i]]),
+ "; mean jacc.=", round(cb$bootmean[i],2)), cex.main=1.5)
       lines(alp$time, apply(sdd[[i]],2,median), lwd=3)
-      text(10, -2.4, paste0("n=", nrow(sdd[[i]])))
+      #text(10, -2.3, paste0("n=", nrow(sdd[[i]])), cex=2)
       }
       }) } )
 }

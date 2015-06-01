@@ -1,0 +1,22 @@
+# Required packages
+
+AnnotationHub
+BiocParallel
+Biostrings
+GenomicAlignments
+GenomicRanges
+GenomicFiles
+Gviz
+IRanges
+RNAseqData.HNRNPC.bam.chr14
+Rsamtools
+ShortRead
+VariantAnnotation
+biomaRt
+microbenchmark
+rtracklayer 
+
+org.Hs.eg.db
+TxDb.Hsapiens.UCSC.hg19.knownGene
+BSgenome.Hsapiens.UCSC.hg19
+Homo.sapiens

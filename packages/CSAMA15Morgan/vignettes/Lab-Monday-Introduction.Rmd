@@ -23,8 +23,8 @@ Authors: Martin Morgan (<a
 Date: 15 June, 2015
 
 - [Introduction to _R_](Lab-Monday-Introduction-R.html)
-- [Introduction to _Bioconductor_](Lab-Monday-Introduction-Bioconductor.html)
+- Introduction to _Bioconductor_
 
-    - Data Representation
-    - Annotation
-    - Work flows
+    - [Introduction](Lab-Monday-Introduction-Bioconductor.html)
+    - [Data Representations](Lab-Monday-Data-Representations.html)
+    - [Annotation](Lab-Monday-Annotation.html)

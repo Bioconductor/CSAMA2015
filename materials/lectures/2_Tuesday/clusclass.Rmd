@@ -10,6 +10,7 @@ runtime: shiny
 ---
 
 ```{r setup,echo=FALSE,results="hide"}
+suppressMessages({
 suppressPackageStartupMessages({
 suppressWarnings({
 library(BiocStyle)
@@ -23,6 +24,7 @@ library(limma)
 library(rafalib)
 library(fpc)
 library(impute)
+})
 })
 })
 ```
@@ -42,7 +44,6 @@ library(impute)
 ## Two basic approaches to clustering, agglomerative and divisive {.flexbox .vcenter}
 
 - Fisher's iris data: three labeled species, four anatomic features
-
 ```{r dofigagg,fig=TRUE,echo=FALSE,fig.height=3.9}
 par(mfrow=c(1,2))
 pp = pam(dist(iris[,1:4]), k=3)
@@ -52,11 +53,12 @@ plot(pp, which=1, main="pam on iris, k=3")
 ```
 
 
-## Genomic example: gene expression in the cell cycle of budding yeast
+## Genomic example: expression in yeast cell cycle 
 
-```{r dofigyy,fig=TRUE,echo=FALSE,fig.height=5.5}
+- Spellman et al MBC '98;  dendrogram on left: bottom half labeled MCM
+```{r dofigyy,fig=TRUE,echo=FALSE,fig.height=6.2}
 library(png)
-im = readPNG("fullcyc.png")
+im = readPNG("spellLinks.png")
 grid.raster(im)
 ```
 
@@ -71,6 +73,21 @@ rbind(time=alp$time[1:5],exprs(alp)[1:5,1:5])
 ```
 
 - G=`r nrow(exprs(alp))` genes comprise rows, N=`r ncol(exprs(alp))` timed samples comprise columns
+
+## Raw trajectories for some of the genes in MCM cluster
+
+```{r lkmcmcc, echo=FALSE,fig=TRUE}
+mcm0 = c("YDR055W", "YNL078W", "YNR067C", "YOR263C", "YNL046W", "YOR264W", 
+"YJL159W", "YPL158C", "YKL116C", "YDL117W", "YGR086C", "YIL104C", 
+"YBR158W", "YGR234W", "YNL327W", "YDL179W", "YNL192W", "YIL009W", 
+"YBR083W", "YKL164C", "YKL163W", "YKL185W", "YLR079W", "YGR044C"
+)
+matplot(alp$time, t(exprs(alp)[mcm0,]), type="l", lwd=2, ylab="expr",
+   xlab="time (m)")
+```
+- consistent with annotation to M/G1
+
+
 
 ## A pattern of interest
 

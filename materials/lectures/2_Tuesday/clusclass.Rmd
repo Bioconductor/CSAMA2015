@@ -4,7 +4,7 @@ author: Vince Carey
 date: May 22, 2005
 output: 
   ioslides_presentation:
-    incremental: true
+    incremental: false
     fig_height: 4
 runtime: shiny
 ---
@@ -29,7 +29,7 @@ library(impute)
 })
 ```
 
-## Basic concepts {.build}
+## Basic concepts 
 
 - Organisms are assayed on multiple features
 - _Variability_ in feature measures exhibits _structure_
@@ -85,6 +85,7 @@ mcm0 = c("YDR055W", "YNL078W", "YNR067C", "YOR263C", "YNL046W", "YOR264W",
 matplot(alp$time, t(exprs(alp)[mcm0,]), type="l", lwd=2, ylab="expr",
    xlab="time (m)")
 ```
+
 - consistent with annotation to M/G1
 
 
@@ -388,7 +389,7 @@ server = function(input, output, session) {
       else input$orf
       })
    output$toptable = DT::renderDataTable(
-      DT::datatable(top100f[,c(1,2,3,4,5,8)])
+      DT::datatable(top100f[,c(2,3,4,5,7)])
       )
    output$trajplot = renderPlot( {
       plot(alp$time, exprs(alp)[INI(),], main=INI(), xlab="time", ylab="reported expr.")

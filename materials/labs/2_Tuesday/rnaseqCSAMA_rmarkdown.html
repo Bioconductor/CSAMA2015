@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function() {
 -->
 <div id="introduction" class="section level1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>This lab will walk you through an end-to-end RNA-Seq differential expression workflow, using 4 along with other Bioconductor packages. We will start from the FASTQ files, show how these were aligned to the reference genome, prepare gene expression values as a count matrix by counting the sequenced fragments, perform exploratory data analysis (EDA), perform differential gene expression analysis with <em>DESeq2</em>, and visually explore the results.</p>
+<p>This lab will walk you through an end-to-end RNA-Seq differential expression workflow, using <em><a href="http://bioconductor.org/packages/release/bioc/html/DESeq2.html">DESeq2</a></em> along with other Bioconductor packages. We will start from the FASTQ files, show how these were aligned to the reference genome, prepare gene expression values as a count matrix by counting the sequenced fragments, perform exploratory data analysis (EDA), perform differential gene expression analysis with <em>DESeq2</em>, and visually explore the results.</p>
 <p>We note that a number of other Bioconductor packages can also be used for statistical inference of differential expression at the gene level including <em><a href="http://bioconductor.org/packages/release/bioc/html/edgeR.html">edgeR</a></em>, <em><a href="http://bioconductor.org/packages/release/bioc/html/BaySeq.html">BaySeq</a></em>, <em><a href="http://bioconductor.org/packages/release/bioc/html/DSS.html">DSS</a></em> and <em><a href="http://bioconductor.org/packages/release/bioc/html/limma.html">limma</a></em>.</p>
 <p>If you have questions about this workflow, please post them to the <a href="https://support.bioconductor.org/">Bioconductor support site</a>. If the questions concern a specific package, you can tag the post with the name of the package, or for general questions about the workflow, tag the post with <code>deseq2</code>. Note the <a href="http://www.bioconductor.org/help/support/posting-guide/">posting guide</a> for crafting an optimal question for the support site.</p>
 </div>
@@ -240,7 +240,7 @@ bamfiles &lt;- BamFileList(filenames, yieldSize=2000000)</code></pre>
 ## # exon_nrow: 279
 ## # cds_nrow: 158
 ## # Db created by: GenomicFeatures package from Bioconductor
-## # Creation time: 2015-06-03 18:25:45 +0200 (Wed, 03 Jun 2015)
+## # Creation time: 2015-06-03 18:49:27 +0200 (Wed, 03 Jun 2015)
 ## # GenomicFeatures version at creation time: 1.20.1
 ## # RSQLite version at creation time: 1.0.0
 ## # DBSCHEMAVERSION: 1.1</code></pre>
@@ -364,7 +364,7 @@ bamfiles &lt;- BamFileList(filenames, yieldSize=2000000)</code></pre>
 ##   ..$ exon_nrow                               : chr &quot;279&quot;
 ##   ..$ cds_nrow                                : chr &quot;158&quot;
 ##   ..$ Db created by                           : chr &quot;GenomicFeatures package from Bioconductor&quot;
-##   ..$ Creation time                           : chr &quot;2015-06-03 18:25:45 +0200 (Wed, 03 Jun 2015)&quot;
+##   ..$ Creation time                           : chr &quot;2015-06-03 18:49:27 +0200 (Wed, 03 Jun 2015)&quot;
 ##   ..$ GenomicFeatures version at creation time: chr &quot;1.20.1&quot;
 ##   ..$ RSQLite version at creation time        : chr &quot;1.0.0&quot;
 ##   ..$ DBSCHEMAVERSION                         : chr &quot;1.1&quot;</code></pre>

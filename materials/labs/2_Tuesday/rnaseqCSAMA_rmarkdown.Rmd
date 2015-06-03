@@ -24,7 +24,7 @@ opts_chunk$set(message = FALSE, error = TRUE, warning = TRUE)
 # Introduction
 
 This lab will walk you through an end-to-end RNA-Seq differential
-expression workflow, using `r 2+2` along with other
+expression workflow, using `r Biocpkg("DESeq2")` along with other
 Bioconductor packages.  We will start from the FASTQ files, show how
 these were aligned to the reference genome, prepare gene expression
 values as a count matrix by counting the sequenced fragments, perform

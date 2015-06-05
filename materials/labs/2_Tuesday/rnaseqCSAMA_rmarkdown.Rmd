@@ -1009,7 +1009,7 @@ normalized by size factor is shown on the x-axis ("M" for minus,
 because a log ratio is equal to log minus log, and "A" for average).
 
 ```{r plotMA}
-DESeq2::plotMA(res, ylim=c(-5,5))
+plotMA(res, ylim=c(-5,5))
 ```
 
 Each gene is represented with a dot. Genes with an adjusted $p$ value
@@ -1027,7 +1027,7 @@ results object. Within the *with* function, only the `baseMean` and
 `log2FoldChange` values for the selected rows of `res` are used.
 
 ```{r plotMA2}
-DESeq2::plotMA(res, ylim=c(-5,5))
+plotMA(res, ylim=c(-5,5))
 with(res[topGene, ], {
   points(baseMean, log2FoldChange, col="dodgerblue", cex=2, lwd=2)
   text(baseMean, log2FoldChange, topGene, pos=2, col="dodgerblue")

@@ -118,15 +118,13 @@ grid.raster(im)
     - Do we require $f$ to have an interpretation, or are we satisfied with a black-box prediction machine?
 - These questions are intertwined
     - It may be more valuable to have a good estimate of a regression parameter than a "more accurate" but uninterpretable feature processor
-    - The scope of the search for $f$ leads to constraints on our
-ability to estimate accuracy of the classifier (relationship of VC dimension
-to optimism bounds)
+    - The scope of the search for $f$ leads to risks of overfitting
 
-## Statistical concepts 
+## Statistical concepts to master
 
 - object representations and distances in high-dimensional spaces
-- tuning of clustering and classification procedures
 - criteria for assigning objects to clusters, or labels to objects
+- tuning of clustering and classification procedures
 - measures of cluster quality: silhouette, Jaccard index
 - approaches to sampling from population models: bootstrap
 - systematic approaches to reducing bias of model appraisals
@@ -145,7 +143,7 @@ tiss = tiss[, tiss$SubType == "normal"]
 #datatable(pData(tiss))
 ```
 
-## Exploring the criteria with barcode data
+## Exploring clustering criteria with barcode data
 
 ```{r lkwid, echo=FALSE}
 hclustWidget = function(mat) {

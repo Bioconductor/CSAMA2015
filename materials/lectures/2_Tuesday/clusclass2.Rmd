@@ -56,7 +56,7 @@ grid.raster(im)
 
 ## Species and organ of origin: microarrays and orthologues (McCall et al., _NAR_ 2012)
 
-```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=4.2}
+```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=3.9}
 library(png)
 im = readPNG("barcoTree.png")
 grid.raster(im)
@@ -109,7 +109,7 @@ grid.raster(im)
     - are there internal (data-driven) measures of cluster quality?
     - can we simplify assessment using external information (e.g., TF binding data to rationalize assertions of coregulation?)
 
-## Classification methods {.smaller}
+## Classification methods 
 
 - Objects are already grouped; module labels and assignments given _a priori_
     - with features $x$ and labels $y$, can we discover $f$ satisfying $y_i \approx f(x_i)$ for instance $i$?
@@ -122,7 +122,7 @@ grid.raster(im)
 ability to estimate accuracy of the classifier (relationship of VC dimension
 to optimism bounds)
 
-## Statistical concepts {.smaller}
+## Statistical concepts 
 
 - object representations and distances in high-dimensional spaces
 - tuning of clustering and classification procedures
@@ -161,7 +161,7 @@ hclustWidget = function(mat) {
    column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9)),
    column(3,  numericInput("ngenes", label = "N genes:", 500, min = 2, max = 100000))
           ),
-  fluidRow(column(7, plotOutput("tree")), column(5, ggvisOutput("pcp")))
+  fluidRow(column(8, plotOutput("tree")), column(4, ggvisOutput("pcp")))
  ), server= function(input, output, session) {
     output$tree <- renderPlot({
 dm = dist(mat[,1:input$ngenes], method=input$distmeth)
@@ -169,8 +169,9 @@ sink(tempfile())
 cb <- clusterboot(dm, clustermethod=hclustCBI, method=input$fusemeth, k=input$numclus, showplots=FALSE, scaling=FALSE)
 sink(NULL)
       dend = hclust( dm, method=input$fusemeth )
+      par(mar=c(3,3,3,1))
       plot(dend, main=paste0("Boot. Jacc. at k=", input$numclus, ": ",
-        paste(round(cb$bootmean,2), collapse=", ")))
+        paste(round(cb$bootmean,2), collapse=", ")), xlab=" ")
     })
     P1 <- reactive({
            all_values <- function(x) {
@@ -199,14 +200,32 @@ rownames(etiss) = substr(tiss$Tissue,1,5)
 hclustWidget(etiss)
 ```
 
+## What is the ward.D2 agglomeration method?
+
+```{r wardalg,fig=TRUE,echo=FALSE,fig.height=4.99}
+library(png)
+im = readPNG("wards.png")
+grid.raster(im)
+```
+
 ## Summary 
 - agglomeration procedure has substantial impact
-- number of features (and selection, not explored) has impact
+- number of features (and detailed selection of features, not explored here) has impact
 - number of clusters based on tree cutting
 - bootstrap distribution of Jaccard index measures cluster stability
 - ordination using principal components can be illuminating
 - procedure is sensitive but sensible choices recapitulate biology
 - there are bivariate outliers in PC1-PC2 view
+
+## Road map
+
+- yeast cell cycle 
+    - compute distance to an interpretable exemplar
+    - illustrate silhouette measure against random grouping
+    - define families of exemplars through trigonometric regression
+    - use F-statistics and parameter estimates to filter and discriminate patterns
+- normalized tissue-specific expression 
+    - demonstrate
 
 ## Yeast cell cycle: phenotypic transitions 
 

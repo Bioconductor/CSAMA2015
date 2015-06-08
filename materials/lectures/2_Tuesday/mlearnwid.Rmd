@@ -29,7 +29,7 @@ mlearnWidget = function(eset, infmla) {
   fluidRow(
    column(2,  selectInput("learner", label = "Learning method:",
                choices = c("LDA", "DLDA", "SLDA", "rpart", "randomForest",
-                   "knn1", "nnet(size, decay)", "adaboost"),
+                   "knn1", "nnet(size, decay)", "adaboost", "bagging"),
                selected = "randomForest")),
 
    column(2,  selectInput("valmeth", label = "Validation method:",
@@ -53,7 +53,8 @@ mlearnWidget = function(eset, infmla) {
             "randomForest" = randomForestI,
             "knn1" = knnI(),
             "nnet(size, decay)" = nnetI,
-            "adaboost" = adaI )
+            "adaboost" = adaI, 
+            "bagging" = baggingI )
      extras = switch( input$learner,
             "LDA" = NULL,
             "DLDA" = NULL,

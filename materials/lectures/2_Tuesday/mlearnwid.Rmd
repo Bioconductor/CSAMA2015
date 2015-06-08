@@ -1,0 +1,150 @@
+---
+title: "widgets for machine learning (temporary)"
+author: Vince Carey
+date: June 2, 2005
+output:
+  ioslides_presentation:
+    incremental: false
+    fig_height: 4
+runtime: shiny
+---
+
+## abc
+```{r demo,echo=FALSE}
+suppressPackageStartupMessages({
+library(tissuesGeneExpression)
+data(tissuesGeneExpression)
+library(Biobase)
+library(ALL)
+})
+tiss = ExpressionSet(e)
+rownames(tab) = colnames(e)
+pData(tiss) = tab
+tiss = tiss[, tiss$SubType == "normal"]
+omad = order(apply(exprs(tiss),1,mad), decreasing=TRUE)
+tiss = tiss[omad,]
+
+mlearnWidget = function(eset, infmla) {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(2,  selectInput("learner", label = "Learning method:",
+               choices = c("LDA", "DLDA", "SLDA", "rpart", "randomForest",
+                   "knn1", "nnet(size, decay)", "adaboost", "bagging"),
+               selected = "randomForest")),
+
+   column(2,  selectInput("valmeth", label = "Validation method:",
+               choices = c("random half", "NOTEST", "5-fold xval",
+                   "10-fold xval", "5f xvalFS topvar(.75)"),
+                   selected="NOTEST")),
+   column(2,  numericInput("nfeat", label = "N features (decr. in MAD):", 100, min = 2, max = 10000)),
+   column(2,  numericInput("nnetdecay", label = "decay (nnet)", .01, min = .001, max = .1)),
+   column(1,  numericInput("nnetsize", label = "size (nnet)", 3, min = 1, max = 10))
+          ),
+#  fluidRow(column(9, textOutput("thecall"))),
+  fluidRow(column(4, textOutput("space")), column(5, textOutput("miscl"))),
+  fluidRow(column(4, htmlOutput("summRob")), column(5, tableOutput("confu")))
+ ), server= function(input, output, session) {
+   mod = reactive({ 
+     lr = switch( input$learner,
+            "LDA" = ldaI,
+            "DLDA" = dldaI,
+            "SLDA" = sldaI,
+            "rpart" = rpartI,
+            "randomForest" = randomForestI,
+            "knn1" = knnI(),
+            "nnet(size, decay)" = nnetI,
+            "adaboost" = adaI, 
+            "bagging" = baggingI )
+     extras = switch( input$learner,
+            "LDA" = NULL,
+            "DLDA" = NULL,
+            "SLDA" = NULL,
+            "rpart" = NULL,
+            "randomForest" = list(importance=TRUE),
+            "knn1" = NULL,
+            "nnet(size, decay)" = list(size=input$nnetsize, decay=input$nnetdecay, maxNwts=10000) )
+     xv = switch(input$valmeth, "random half" = sample(1:ncol(eset), size=ceiling(ncol(eset)/2)),
+                      "NOTEST" = xvalSpec("NOTEST"),
+                      "5-fold xval"=xvalSpec("LOG", 5, balKfold.xvspec(5)),
+                      "10-fold xval"=xvalSpec("LOG", 10, balKfold.xvspec(10)),
+                      "5f xvalFS topvar(.75)"=xvalSpec("LOG", 5, balKfold.xvspec(5),
+                             fsFun=fs.topVariance(.75)))
+     list(learner=lr, xvmeth=xv, extras=extras)
+     })
+   nf = reactive({ input$nfeat })
+   output$space = renderText( "RObject excerpt:  " )
+
+totext = function(x) {
+    on.exit({
+        sink(NULL)
+    })
+    tf = tempfile()
+    sink(tf)
+    print(x)
+    hwrite(matrix(readLines(tf), nc=1))
+}
+
+tize = function (x) 
+{
+    on.exit({
+        sink(NULL)
+    })
+    tf = tempfile()
+    sink(tf)
+    #print(x)
+    print(RObject(x))
+    rl = readLines(tf)
+    hwrite(matrix(rl[1:min(10, length(rl))], nc=1), byrow=TRUE)
+#    hwrite("confusion matrix", br=TRUE)
+#    hwrite(RObject(x)$confu)
+#    print(xtable(matrix(readLines(tf), nc=1)), type="html")
+}
+
+   ans = reactive({ 
+     argl = c(list(
+               formula= infmla,
+               data=eset[1:nf(),], .method=mod()$learner, 
+               trainInd=mod()$xv ), mod()$extras )
+     do.call(MLearn, argl ) })
+   output$summRob = renderText( tize(ans() ) )
+   output$confu = renderTable({ options(digits=3); 
+            if (input$learner == "randomForest") 
+                   return(RObject(ans())$confu)
+            else if (input$valmeth == "NOTEST") 
+                    return(confuMat(ans(), "train"))
+            confuMat(ans())})
+   output$miscl = renderText({ 
+            if (input$learner == "randomForest" & input$valmeth =="NOTEST") {
+                    mat = RObject(ans())$confu
+                    mat = mat[,-ncol(mat)]
+                    }
+            else if (input$valmeth == "NOTEST") {
+                    mat = confuMat(ans(), "train")
+                    }
+            else mat = confuMat(ans())
+            sm = sum(mat)
+            off = sm-sum(diag(mat))
+            paste("est. miscl. rate = ", round(off/sm,3))
+            })
+})}
+suppressPackageStartupMessages({
+library(MLInterfaces)
+})
+mlearnWidget(tiss, infmla=Tissue~.)
+```
+
+## On leukemia data
+
+```{r echo=FALSE}
+data(ALL)
+mlearnWidget(ALL, infmla=mol.biol~.)
+```
+
+## On leukemia data, 2class
+
+```{r echo=FALSE}
+data(ALL)
+ALL = ALL[, which(ALL$mol.biol %in% c("BCR/ABL", "NEG"))]
+ALL$mol.biol = factor(ALL$mol.biol)
+mlearnWidget(ALL, infmla=mol.biol~.)
+```

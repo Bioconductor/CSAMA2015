@@ -1,0 +1,46 @@
+Gene set correlations
+========================================================
+author: Michael Love
+date: June 8, 2015
+autosize: false
+width: 1600
+
+Gene set with correlation
+===
+
+```{r}
+library(mvtnorm)
+rho <- .5
+n <- 2
+sigma <- matrix(rho, ncol=n, nrow=n)
+diag(sigma) <- 1
+x <- rmvnorm(10000, mean=rep(0,n), sigma=sigma)
+cor(x[,1], x[,2])
+plot(x, cex=.1)
+```
+
+```{r}
+N <- 10
+sigma <- matrix(rho, ncol=N, nrow=N)
+diag(sigma) <- 1
+t <- rmvt(n=10000, sigma=sigma, df=n-1)
+```
+
+===
+
+```{r}
+t.star <- sqrt(N) * rowMeans(t)
+VINF <- 1 + (N - 1) * rho
+```
+
+<center>
+
+```{r, echo=FALSE, out.width="800px"}
+hist(t.star,breaks=200,col="grey",border="white",freq=FALSE,ylim=c(0,.5),xlim=c(-5,5))
+s <- seq(from=-5,to=5,length=100)
+lines(s, dnorm(s),col="magenta",lwd=3)
+lines(s, dnorm(s,0,sqrt(VINF)),col="dodgerblue",lwd=3)
+legend("topright", c("N(0,1)","N(0,VINF)"), col=c("magenta","dodgerblue"), lwd=3, cex=1.5)
+```
+
+</center>

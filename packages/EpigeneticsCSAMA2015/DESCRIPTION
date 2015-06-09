@@ -1,0 +1,10 @@
+Package: EpigeneticsCSAMA2015
+Version: 0.0.1
+Title: CSAMA 2015 Epigenetics and ChIP-seq lab Resources for Aleksandra Pekowska
+Description: This package contains data, and short functions for use in parts of the CSAMA 2015 course lead by Aleksandra Pekowska. The data were released as a part of "Histone H3K27ac separates active from poised enhancers and predicts developmental state" publication in PNAS, 2010 Dec 14;107(50):21931-6
+Author: Aleksandra Pekowska
+Maintainer: Aleksandra Pekowska <pekowska@embl.de>
+Suggests: GenomicRanges, rtracklayer, IRanges, VennDiagram, ShortRead, chipseq, Gviz
+VignetteBuilder: knitr
+License: Artistic-2.0
+Depends:

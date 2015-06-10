@@ -12,8 +12,8 @@ vignette: >
 BiocStyle::markdown()
 ```
 
-```{r setup, echo=FALSE}
-options(max.print=1000)
+```{r setup, echo=FALSE, warning=FALSE}
+options(max.print=1000, width=100)
 knitr::opts_chunk$set(cache=TRUE)
 suppressPackageStartupMessages({
     library(org.Hs.eg.db)
@@ -30,9 +30,9 @@ suppressPackageStartupMessages({
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back to [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](Lab-Monday-Introduction.html)
 
 # Gene annotation
 
@@ -67,7 +67,7 @@ for retrieving annotations are summarized in the table.
 |            | `select()`                            | Retrieve annotations matching `keys`, `keytype` and `columns`    |
 | Manipulate | `setdiff()`, `union()`, `intersect()` | Operations on sets                                               |
 |            | `duplicated()`, `unique()`            | Mark or remove duplicates                                        |
-|            | \Rfunction{\%in\%},  `match()`        | Find matches                                                     |
+|            | `%in%`,  `match()`                    | Find matches                                                     |
 |            | `any()`, `all()`                      | Are any `TRUE`?  Are all?                                        |
 |            | `merge()`                             | Combine two different \Robject{data.frames} based on shared keys |
 | `GRanges*` | `transcripts()`, `exons()`, `cds()`   | Features (transcripts, exons, coding sequence) as `GRanges`.     |
@@ -115,7 +115,7 @@ queries is in following Table.
 | [SRAdb](http://www.ncbi.nlm.nih.gov/sra)            | Sequencing experiments.                   |
 | [rtracklayer](http://genome.ucsc.edu)               | genome tracks.                            |
 | [GEOquery](http://www.ncbi.nlm.nih.gov/geo/)        | Array and other data                      |
-| [ArrayExpress](http://www.ebi.ac.uk/arrayexpress/)] | Array and other data                      |
+| [ArrayExpress](http://www.ebi.ac.uk/arrayexpress/)  | Array and other data                      |
 
 *Using biomaRt*
 
@@ -300,7 +300,7 @@ names(seq)
 seq[["uc010whl.2"]]                     # 21 introns
 ```
 
-## [rtracklayer][]
+## _rtracklayer_
 
 The [rtracklayer][] package allows us to query the UCSC genome
 browser, as well as providing `import()` and
@@ -360,13 +360,15 @@ abline(v=start(roi) + (end(roi) - start(roi) + 1) / 2, col="blue")
 ``` 
 # AnnotationHub
 
-[AnnotationHub]: http://bioconductor.org/packages/release/bioc/html/AnnotationHub.html
-[BSgenome]: http://bioconductor.org/packages/release/bioc/html/BSgenome.html
-[Bsgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/release/data/annotation/html/Bsgenome.Hsapiens.UCSC.hg19.html
-[Homo.sapiens]: http://bioconductor.org/packages/release/data/annotation/html/Homo.sapiens.html
-[Rsamtools]: http://bioconductor.org/packages/release/bioc/html/Rsamtools.html
-[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/release/data/annotation/html/TxDb.Hsapiens.UCSC.hg19.knownGene.html
-[biomaRt]: http://bioconductor.org/packages/release/bioc/html/biomaRt.html
-[org.Hs.eg.db]: http://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
-[org.Sc.sgd.db]: http://bioconductor.org/packages/release/data/annotation/html/org.Sc.sgd.db.html
-[rtracklayer]: http://bioconductor.org/packages/release/bioc/html/rtracklayer.html
+[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi
+[AnnotationHub]: http://bioconductor.org/packages/AnnotationHub
+[BSgenome]: http://bioconductor.org/packages/release/BSgenome
+[Bsgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/Bsgenome.Hsapiens.UCSC.hg19
+[Gviz]: http://bioconductor.org/packages/release/Gviz
+[Homo.sapiens]: http://bioconductor.org/packages/release/Homo.sapiens
+[Rsamtools]: http://bioconductor.org/packages/Rsamtools
+[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/TxDb.Hsapiens.UCSC.hg19.knownGene
+[biomaRt]: http://bioconductor.org/packages/biomaRt
+[org.Hs.eg.db]: http://bioconductor.org/packages/org.Hs.eg.db
+[org.Sc.sgd.db]: http://bioconductor.org/packages/org.Sc.sgd.db
+[rtracklayer]: http://bioconductor.org/packages/release/rtracklayer

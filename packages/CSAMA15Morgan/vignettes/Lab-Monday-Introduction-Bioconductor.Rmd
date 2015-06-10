@@ -12,7 +12,7 @@ vignette: >
 BiocStyle::markdown()
 ```
 
-```{r setup, echo=FALSE}
+```{r setup, echo=FALSE, messages=FALSE, warnings=FALSE}
 knitr::opts_chunk$set(cache=TRUE)
 suppressPackageStartupMessages({
     library(GenomicRanges)
@@ -22,9 +22,9 @@ suppressPackageStartupMessages({
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back to [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](Lab-Monday-Introduction.html)
 
 # Bioconductor
 
@@ -184,7 +184,7 @@ course.
   a reference genome. See for instance the `?readGAlignments` help
   page and `vigentte(package="GenomicAlignments",
   "summarizeOverlaps")`
-- [rtracklayer][]'s `import` and `export` functions can read in many
+- The [rtracklayer][] `import` and `export` functions can read in many
   common file types, e.g., BED, WIG, GTF, ..., in addition to querying
   and navigating the UCSC genome browser. Check out the `?import` page
   for basic usage.
@@ -241,34 +241,35 @@ overall package use.
 [lineprof]: https://github.com/hadley/lineprof
 [microbenchmark]: http://cran.r-project.org/web/packages/microbenchmark/index.html
 
-[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi.html
-[BSgenome]: http://bioconductor.org/packages/BSgenome.html
-[Biostrings]: http://bioconductor.org/packages/Biostrings.html
-[CNTools]: http://bioconductor.org/packages/CNTools.html
-[ChIPQC]: http://bioconductor.org/packages/ChIPQC.html
-[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno.html
-[DESeq2]: http://bioconductor.org/packages/DESeq2.html
-[DiffBind]: http://bioconductor.org/packages/DiffBind.html
-[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments.html
-[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges.html
-[IRanges]: http://bioconductor.org/packages/IRanges.html
-[KEGGREST]: http://bioconductor.org/packages/KEGGREST.html
-[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC.html
-[Rsamtools]: http://bioconductor.org/packages/Rsamtools.html
-[ShortRead]: http://bioconductor.org/packages/ShortRead.html
-[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation.html
-[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering.html
-[VariantTools]: http://bioconductor.org/packages/VariantTools.html
-[biomaRt]: http://bioconductor.org/packages/biomaRt.html
-[cn.mops]: http://bioconductor.org/packages/cn.mops.html
-[h5vc]: http://bioconductor.org/packages/h5vc.html
-[edgeR]: http://bioconductor.org/packages/edgeR.html
-[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP.html
-[limma]: http://bioconductor.org/packages/limma.html
-[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq.html
-[phyloseq]: http://bioconductor.org/packages/phyloseq.html
-[snpStats]: http://bioconductor.org/packages/snpStats.html
+[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi
+[BSgenome]: http://bioconductor.org/packages/BSgenome
+[Biostrings]: http://bioconductor.org/packages/Biostrings
+[CNTools]: http://bioconductor.org/packages/CNTools
+[ChIPQC]: http://bioconductor.org/packages/ChIPQC
+[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno
+[DESeq2]: http://bioconductor.org/packages/DESeq2
+[DiffBind]: http://bioconductor.org/packages/DiffBind
+[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments
+[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges
+[IRanges]: http://bioconductor.org/packages/IRanges
+[KEGGREST]: http://bioconductor.org/packages/KEGGREST
+[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC
+[rtracklayer]: http://bioconductor.org/packages/rtracklayer
+[Rsamtools]: http://bioconductor.org/packages/Rsamtools
+[ShortRead]: http://bioconductor.org/packages/ShortRead
+[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation
+[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering
+[VariantTools]: http://bioconductor.org/packages/VariantTools
+[biomaRt]: http://bioconductor.org/packages/biomaRt
+[cn.mops]: http://bioconductor.org/packages/cn.mops
+[h5vc]: http://bioconductor.org/packages/h5vc
+[edgeR]: http://bioconductor.org/packages/edgeR
+[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP
+[limma]: http://bioconductor.org/packages/limma
+[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq
+[phyloseq]: http://bioconductor.org/packages/phyloseq
+[snpStats]: http://bioconductor.org/packages/snpStats
 
-[org.Hs.eg.db]: http://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
-[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/release/data/annotation/html/TxDb.Hsapiens.UCSC.hg19.knownGene.html
-[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/release/data/annotation/html/BSgenome.Hsapiens.UCSC.hg19.html
+[org.Hs.eg.db]: http://bioconductor.org/packages/org.Hs.eg.db
+[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/TxDb.Hsapiens.UCSC.hg19.knownGene
+[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/BSgenome.Hsapiens.UCSC.hg19

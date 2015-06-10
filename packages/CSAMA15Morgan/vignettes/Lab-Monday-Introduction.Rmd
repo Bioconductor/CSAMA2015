@@ -19,7 +19,7 @@ knitr::opts_chunk$set(cache=TRUE)
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015
 
 - [Introduction to _R_](Lab-Monday-Introduction-R.html)

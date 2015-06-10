@@ -22,9 +22,9 @@ suppressPackageStartupMessages({
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back to [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](Lab-Monday-Introduction.html)
 
 # Classes, methods, and packages
 
@@ -371,7 +371,7 @@ Reference
   Biol 9(8): e1003118. doi:10.1371/journal.pcbi.1003118
 
 
-## [Biostrings][] (DNA or amino acid sequences)
+## _Biostrings_ (DNA or amino acid sequences)
 
 Classes
 
@@ -400,14 +400,14 @@ Example
   into more user-friendly `BSgenome` packages. The following
   calculates GC content across chr14.
 
-  ```{r BSgenome-require, message=FALSE}
-  require(BSgenome.Hsapiens.UCSC.hg19)
-  chr14_range = GRanges("chr14", IRanges(1, seqlengths(Hsapiens)["chr14"]))
-  chr14_dna <- getSeq(Hsapiens, chr14_range)
-  letterFrequency(chr14_dna, "GC", as.prob=TRUE)
-  ```
-  
-## [GenomicAlignments][] (Aligned reads)
+    ```{r BSgenome-require, message=FALSE}
+    require(BSgenome.Hsapiens.UCSC.hg19)
+    chr14_range = GRanges("chr14", IRanges(1, seqlengths(Hsapiens)["chr14"]))
+    chr14_dna <- getSeq(Hsapiens, chr14_range)
+    letterFrequency(chr14_dna, "GC", as.prob=TRUE)
+    ```
+    
+## _GenomicAlignments_ (Aligned reads)
 
 Classes -- GenomicRanges-like behaivor
 
@@ -427,26 +427,26 @@ Example
 - Find reads supporting the junction identified above, at position
   19653707 + 66M = 19653773 of chromosome 14
 
-  ```{r bam-require}
-  require(GenomicRanges)
-  require(GenomicAlignments)
-  require(Rsamtools)
-  
-  ## our 'region of interest'
-  roi <- GRanges("chr14", IRanges(19653773, width=1)) 
-  ## sample data
-  require('RNAseqData.HNRNPC.bam.chr14')
-  bf <- BamFile(RNAseqData.HNRNPC.bam.chr14_BAMFILES[[1]], asMates=TRUE)
-  ## alignments, junctions, overlapping our roi
-  paln <- readGAlignmentsList(bf)
-  j <- summarizeJunctions(paln, with.revmap=TRUE)
-  j_overlap <- j[j %over% roi]
-  
-  ## supporting reads
-  paln[j_overlap$revmap[[1]]]
-  ```
-  
-## [VariantAnnotation][] (Called variants)
+    ```{r bam-require}
+    require(GenomicRanges)
+    require(GenomicAlignments)
+    require(Rsamtools)
+    
+    ## our 'region of interest'
+    roi <- GRanges("chr14", IRanges(19653773, width=1)) 
+    ## sample data
+    require('RNAseqData.HNRNPC.bam.chr14')
+    bf <- BamFile(RNAseqData.HNRNPC.bam.chr14_BAMFILES[[1]], asMates=TRUE)
+    ## alignments, junctions, overlapping our roi
+    paln <- readGAlignmentsList(bf)
+    j <- summarizeJunctions(paln, with.revmap=TRUE)
+    j_overlap <- j[j %over% roi]
+    
+    ## supporting reads
+    paln[j_overlap$revmap[[1]]]
+    ```
+    
+## _VariantAnnotation_ (Called variants)
 
 Classes -- GenomicRanges-like behavior
 
@@ -466,20 +466,20 @@ Example
 - Read variants from a VCF file, and annotate with respect to a known
   gene model
   
-  ```{r vcf, message=FALSE}
-  ## input variants
-  require(VariantAnnotation)
-  fl <- system.file("extdata", "chr22.vcf.gz", package="VariantAnnotation")
-  vcf <- readVcf(fl, "hg19")
-  seqlevels(vcf) <- "chr22"
-  ## known gene model
-  require(TxDb.Hsapiens.UCSC.hg19.knownGene)
-  coding <- locateVariants(rowRanges(vcf),
-      TxDb.Hsapiens.UCSC.hg19.knownGene,
-      CodingVariants())
-  head(coding)
-  ```
-
+    ```{r vcf, message=FALSE}
+    ## input variants
+    require(VariantAnnotation)
+    fl <- system.file("extdata", "chr22.vcf.gz", package="VariantAnnotation")
+    vcf <- readVcf(fl, "hg19")
+    seqlevels(vcf) <- "chr22"
+    ## known gene model
+    require(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    coding <- locateVariants(rowRanges(vcf),
+        TxDb.Hsapiens.UCSC.hg19.knownGene,
+        CodingVariants())
+    head(coding)
+    ```
+  
 Related packages
 
 - [ensemblVEP][] 
@@ -495,7 +495,7 @@ Reference
   online March 28, 2014
   [doi:10.1093/bioinformatics/btu168](http://bioinformatics.oxfordjournals.org/content/early/2014/04/21/bioinformatics.btu168)
 
-## [rtracklayer][] (Genome annotations)
+## _rtracklayer_ (Genome annotations)
 
 - Import BED, GTF, WIG, etc
 - Export GRanges to BED, GTF, WIG, ...
@@ -537,52 +537,51 @@ differential expression analysis, e.g., through [DESeq2][] and
 1. Identify the regions of interest. We use a 'TxDb' package with gene
    models alreaddy defined
    
-   ```{r summarizeOverlaps-roi, message=FALSE}
-   require(TxDb.Hsapiens.UCSC.hg19.knownGene)
-   exByGn <- exonsBy(TxDb.Hsapiens.UCSC.hg19.knownGene, "gene")
-   ## only chromosome 14
-   seqlevels(exByGn, force=TRUE) = "chr14"
-   ```
-
+    ```{r summarizeOverlaps-roi, message=FALSE}
+    require(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    exByGn <- exonsBy(TxDb.Hsapiens.UCSC.hg19.knownGene, "gene")
+    ## only chromosome 14
+    seqlevels(exByGn, force=TRUE) = "chr14"
+    ```
+     
 2. Identify the sample BAM files.
 
-   ```{r summarizeOverlaps-bam, message=FALSE}
-   require(RNAseqData.HNRNPC.bam.chr14)
-   length(RNAseqData.HNRNPC.bam.chr14_BAMFILES)
-   ```
-
+    ```{r summarizeOverlaps-bam, message=FALSE}
+    require(RNAseqData.HNRNPC.bam.chr14)
+    length(RNAseqData.HNRNPC.bam.chr14_BAMFILES)
+    ```
+     
 3. Summarize overlaps, optionally in parallel
 
-   ```{r summarizeOverlaps}
-   ## next 2 lines optional; non-Windows
-   library(BiocParallel)
-   register(MulticoreParam(workers=detectCores()))
-   olaps <- summarizeOverlaps(exByGn, RNAseqData.HNRNPC.bam.chr14_BAMFILES)
-   ```
-
+    ```{r summarizeOverlaps}
+    ## next 2 lines optional; non-Windows
+    library(BiocParallel)
+    register(MulticoreParam(workers=detectCores()))
+    olaps <- summarizeOverlaps(exByGn, RNAseqData.HNRNPC.bam.chr14_BAMFILES)
+    ```
+     
 4. Explore our handiwork, e.g., library sizes (column sums),
    relationship between gene length and number of mapped reads, etc.
-   
-   ```{r summarizeOverlaps-explore}
-   olaps
-   head(assay(olaps))
-   colSums(assay(olaps))                # library sizes
-   plot(sum(width(olaps)), rowMeans(assay(olaps)), log="xy")
-   ```
 
+    ```{r summarizeOverlaps-explore}
+    olaps
+    head(assay(olaps))
+    colSums(assay(olaps))                # library sizes
+    plot(sum(width(olaps)), rowMeans(assay(olaps)), log="xy")
+    ```
+     
 5. As an advanced exercise, investigate the relationship between GC
    content and read count
    
-   ```{r summarizeOverlaps-gc}
-   require(BSgenome.Hsapiens.UCSC.hg19)
-   sequences <- getSeq(BSgenome.Hsapiens.UCSC.hg19, rowRanges(olaps))
-   gcPerExon <- letterFrequency(unlist(sequences), "GC")
-   gc <- relist(as.vector(gcPerExon), sequences)
-   gc_percent <- sum(gc) / sum(width(olaps))
-   plot(gc_percent, rowMeans(assay(olaps)), log="y")
-   ```
-
-
+    ```{r summarizeOverlaps-gc}
+    require(BSgenome.Hsapiens.UCSC.hg19)
+    sequences <- getSeq(BSgenome.Hsapiens.UCSC.hg19, rowRanges(olaps))
+    gcPerExon <- letterFrequency(unlist(sequences), "GC")
+    gc <- relist(as.vector(gcPerExon), sequences)
+    gc_percent <- sum(gc) / sum(width(olaps))
+    plot(gc_percent, rowMeans(assay(olaps)), log="y")
+    ```
+   
 [biocViews]: http://bioconductor.org/packages/BiocViews.html#___Software
 [AnnotationData]: http://bioconductor.org/packages/BiocViews.html#___AnnotationData
 
@@ -591,34 +590,35 @@ differential expression analysis, e.g., through [DESeq2][] and
 [lineprof]: https://github.com/hadley/lineprof
 [microbenchmark]: http://cran.r-project.org/web/packages/microbenchmark/index.html
 
-[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi.html
-[BSgenome]: http://bioconductor.org/packages/BSgenome.html
-[Biostrings]: http://bioconductor.org/packages/Biostrings.html
-[CNTools]: http://bioconductor.org/packages/CNTools.html
-[ChIPQC]: http://bioconductor.org/packages/ChIPQC.html
-[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno.html
-[DESeq2]: http://bioconductor.org/packages/DESeq2.html
-[DiffBind]: http://bioconductor.org/packages/DiffBind.html
-[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments.html
-[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges.html
-[IRanges]: http://bioconductor.org/packages/IRanges.html
-[KEGGREST]: http://bioconductor.org/packages/KEGGREST.html
-[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC.html
-[Rsamtools]: http://bioconductor.org/packages/Rsamtools.html
-[ShortRead]: http://bioconductor.org/packages/ShortRead.html
-[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation.html
-[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering.html
-[VariantTools]: http://bioconductor.org/packages/VariantTools.html
-[biomaRt]: http://bioconductor.org/packages/biomaRt.html
-[cn.mops]: http://bioconductor.org/packages/cn.mops.html
-[h5vc]: http://bioconductor.org/packages/h5vc.html
-[edgeR]: http://bioconductor.org/packages/edgeR.html
-[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP.html
-[limma]: http://bioconductor.org/packages/limma.html
-[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq.html
-[phyloseq]: http://bioconductor.org/packages/phyloseq.html
-[snpStats]: http://bioconductor.org/packages/snpStats.html
+[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi
+[BSgenome]: http://bioconductor.org/packages/BSgenome
+[Biostrings]: http://bioconductor.org/packages/Biostrings
+[CNTools]: http://bioconductor.org/packages/CNTools
+[ChIPQC]: http://bioconductor.org/packages/ChIPQC
+[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno
+[DESeq2]: http://bioconductor.org/packages/DESeq2
+[DiffBind]: http://bioconductor.org/packages/DiffBind
+[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments
+[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges
+[IRanges]: http://bioconductor.org/packages/IRanges
+[KEGGREST]: http://bioconductor.org/packages/KEGGREST
+[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC
+[rtracklayer]: http://bioconductor.org/packages/rtracklayer
+[Rsamtools]: http://bioconductor.org/packages/Rsamtools
+[ShortRead]: http://bioconductor.org/packages/ShortRead
+[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation
+[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering
+[VariantTools]: http://bioconductor.org/packages/VariantTools
+[biomaRt]: http://bioconductor.org/packages/biomaRt
+[cn.mops]: http://bioconductor.org/packages/cn.mops
+[h5vc]: http://bioconductor.org/packages/h5vc
+[edgeR]: http://bioconductor.org/packages/edgeR
+[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP
+[limma]: http://bioconductor.org/packages/limma
+[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq
+[phyloseq]: http://bioconductor.org/packages/phyloseq
+[snpStats]: http://bioconductor.org/packages/snpStats
 
-[org.Hs.eg.db]: http://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
-[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/release/data/annotation/html/TxDb.Hsapiens.UCSC.hg19.knownGene.html
-[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/release/data/annotation/html/BSgenome.Hsapiens.UCSC.hg19.html
+[org.Hs.eg.db]: http://bioconductor.org/packages/org.Hs.eg.db
+[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/TxDb.Hsapiens.UCSC.hg19.knownGene
+[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/BSgenome.Hsapiens.UCSC.hg19

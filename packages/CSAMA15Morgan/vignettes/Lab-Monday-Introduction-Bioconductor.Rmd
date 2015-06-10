@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab, part B: Introduction to _Bioconductor_"
+title: "Monday Lab, part B.1: Introduction to _Bioconductor_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab, part B: Introduction to Bioconductor}
+  % \VignetteIndexEntry{Monday Lab, part B.1: Introduction to Bioconductor}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -12,7 +12,7 @@ vignette: >
 BiocStyle::markdown()
 ```
 
-```{r setup, echo=FALSE}
+```{r setup, echo=FALSE, messages=FALSE, warnings=FALSE}
 knitr::opts_chunk$set(cache=TRUE)
 suppressPackageStartupMessages({
     library(GenomicRanges)
@@ -22,132 +22,87 @@ suppressPackageStartupMessages({
 Authors: Martin Morgan (<a
   href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
   Arora (<a
-  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a><br />
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back to [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](Lab-Monday-Introduction.html)
 
-# Making progress: classes, methods, and packages
+# Bioconductor
 
-This section focuses on classes, methods, and packages, with the goal
-being to learn to navigate the help system and interactive discovery
-facilities.
+Analysis and comprehension of high-throughput genomic data
 
-## Motivation
+- Statistical analysis: large data, technological artifacts, designed
+  experiments; rigorous
+- Comprehension: biological context, visualization, reproducibility
+- High-throughput
+    - Sequencing: RNASeq, ChIPSeq, variants, copy number, ...
+    - Microarrays: expression, SNP, ...
+    - Flow cytometry, proteomics, images, ...
+  
+Packages, vignettes, work flows
 
-Sequence analysis is specialized
-- Large data needs to be processed in a memory- and time-efficient manner
-- Specific algorithms have been developed for the unique
-  characteristics of sequence data
+![Alt Sequencing Ecosystem](our_figures/SequencingEcosystem.png)
 
-Additional considerations
-- Re-use of existing, tested code is easier to do and less error-prone
-  than re-inventing the wheel.
-- Interoperability between packages is easier when the packages share
-  similar data structures.
+- 1024 packages
+- Discover and navigate via [biocViews][]
+- Package 'landing page'
+    - Title, author / maintainer, short description, citation,
+      installation instructions, ..., download statistics
+- All user-visible functions have help pages, most with runnable
+  examples
+- 'Vignettes' an important feature in Bioconductor -- narrative
+  documents illustrating how to use the package, with integrated code
+- 'Release' (every six months) and 'devel' branches
 
-Solution: use well-defined _classes_ to represent complex data;
-_methods_ operate on the classes to perform useful functions.  Classes
-and methods are placed together and distributed as _packages_ so that
-we can all benefit from the hard work and tested code of others.
+Objects
 
-## Case study: IRanges and GRanges
+- Represent complicated data types
+- Foster interoperability
+- S4 object system
+    - Introspection: `getClass()`, `getMethod()`
+    - 'accessors' and other documented functions / methods for
+       manipulation, rather than direct access to the object structure
+- Interactive help
+    - `method?"substr,<tab>"` to select help on methods,
+      `class?D<tab>` for help on classes
 
-The [IRanges][] package defines an important class for specifying
-integer ranges, e.g.,
-```{r iranges}
-library(IRanges)
-ir <- IRanges(start=c(10, 20, 30), width=5)
-ir
+Example
+
+```{r Biostrings, message=FALSE}
+require(Biostrings)                     # Biological sequences
+data(phiX174Phage)                      # sample data, see ?phiX174Phage
+phiX174Phage
+m <- consensusMatrix(phiX174Phage)[1:4,] # nucl. x position counts
+polymorphic <- which(colSums(m != 0) > 1)
+m[, polymorphic]
+```
+```{r showMethods, eval=FALSE}
+methods(class=class(phiX174Phage))
 ```
 
-There are many interesting operations to be performed on ranges, e.g,
-`flank()` identifies adjacent ranges
-```{r iranges-flank}
-flank(ir, 3)
-```
+# Exercises
 
-Consult the help page for flank, `?flank`, and explore other
-range-based operations.
-
-The `IRanges` class is part of a class hierarchy. To see this, ask R for
-the class of `ir`, and for the class definition of the `IRanges` class
-```{r iranges-class}
-class(ir)
-getClassDef(class(ir))
-```
-
-Notice that `IRanges` extends the `Ranges` class. Now try entering
-`?"flank,<tab>`, where `<tab>` means to press the tab key to ask for
-tab completion (may not be necessary in Rstudio). You can see that
-there are help pages for several different classes. Tab-complete to
-
-```{r iranges-flank-method, eval=FALSE}
-?"flank,Ranges-method" 
-```
-
-and verify that you're at the page that describes the method relevant
-to an `IRanges` instance.
-
-The [GenomicRanges][] package extends the notion of ranges to include
-features relevant to application of ranges in sequence analysis,
-particularly the ability to associate a range with a sequence name
-(e.g., chromosome) and a strand. Create a `GRanges` instance based on
-our `IRanges` instance, as follows
-```{r granges}
-library(GenomicRanges)
-gr <- GRanges(c("chr1", "chr1", "chr2"), ir, strand=c("+", "-", "+"))
-gr
-```
-
-The notion of flanking sequence has a more nuanced meaning in
-biology. In particular we might expect that flanking sequence on the
-`+` strand would precede the range, but on the minus strand would
-follow it. Verify that `flank` applied to a `GRanges` object has this
-behavior.
-```{r granges-flank}
-flank(gr, 3)
-```
-
-Discover what classes `GRanges` extends, find the help page
-documenting the behavior of `flank` when applied to a GRanges object,
-and verify that the help page documents the behavior we just observed.
-```{r granges-class}
-class(gr)
-getClassDef(class(gr))
-```
-```{r granges-flank-method, eval=FALSE}
-?"flank,GenomicRanges-method"
-```
-Notice that the available `flank()` methods have been augmented by the
-methods defined in the _GenomicRanges_ package.
-
-It seems like there might be a number of helpful methods available for
-working with genomic ranges; we can discover some of these from the
-command line, indicating that the methods should be on the current
-`search()` path
-
-```{r granges-methods, eval=FALSE}
-showMethods(class="GRanges", where=search())
-```
-
-Use `help()` to list the help pages in the `GenomicRanges` package,
-and `vignettes()` to view and access available vignettes; these are
-also available in the Rstudio 'Help' tab.
-```{r granges-man-and-vignettes, eval=FALSE}
-help(package="GenomicRanges")
-vignette(package="GenomicRanges")
-vignette(package="GenomicRanges", "GenomicRangesHOWTOs")
-```
-
-# Annotations
-
-(see Rnw file)
-
-## Genes
-
-## Genomes
-
-## _AnnotationHub_
+1. Load the Biostrings package and phiX174Phage data set. What class
+   is phiX174Phage? Find the help page for the class, and identify
+   interesting functions that apply to it.
+2. Discover vignettes in the Biostrings package with
+   `vignette(package="Biostrings")`. Add another argument to the
+   `vignette` function to view the 'BiostringsQuickOverview' vignette.
+3. Navigate to the Biostrings landing page on
+   http://bioconductor.org. Do this by visiting the biocViews
+   page. Can you find the BiostringsQuickOverview vignette on the web
+   site?
+4. The following code loads some sample data, 6 versions of the
+   phiX174Phage genome as a DNAStringSet object.
+    ```{r phiX}
+    library(Biostrings)
+    data(phiX174Phage)
+    ```
+   Explain what the following code does, and how it works
+    ```{r consensusMatrix}
+    m <- consensusMatrix(phiX174Phage)[1:4,]
+    polymorphic <- which(colSums(m != 0) > 1)
+    mapply(substr, polymorphic, polymorphic, MoreArgs=list(x=phiX174Phage))
+    ```
 
 # A sequence analysis package tour
 
@@ -229,7 +184,7 @@ course.
   a reference genome. See for instance the `?readGAlignments` help
   page and `vigentte(package="GenomicAlignments",
   "summarizeOverlaps")`
-- [rtracklayer][]'s `import` and `export` functions can read in many
+- The [rtracklayer][] `import` and `export` functions can read in many
   common file types, e.g., BED, WIG, GTF, ..., in addition to querying
   and navigating the UCSC genome browser. Check out the `?import` page
   for basic usage.
@@ -268,9 +223,15 @@ examples to explore during this lab include:
   [annotation work flow](http://bioconductor.org/help/workflows/annotation/annotation/)
   on the Bioconductor web site.
 
+# Summary
 
-
-[BRFSS]: http://www.cdc.gov/brfss/
+Bioconductor is a large collection of R packages for the analysis and
+comprehension of high-throughput genomic data. Bioconductor relies on
+formal classes to represent genomic data, so it is important to
+develop a rudimentary comfort with classes, including seeking help for
+classes and methods. Bioconductor uses vignettes to augment
+traditional help pages; these can be very valuable in illustrating
+overall package use.
 
 [biocViews]: http://bioconductor.org/packages/BiocViews.html#___Software
 [AnnotationData]: http://bioconductor.org/packages/BiocViews.html#___AnnotationData
@@ -280,35 +241,35 @@ examples to explore during this lab include:
 [lineprof]: https://github.com/hadley/lineprof
 [microbenchmark]: http://cran.r-project.org/web/packages/microbenchmark/index.html
 
+[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi
+[BSgenome]: http://bioconductor.org/packages/BSgenome
+[Biostrings]: http://bioconductor.org/packages/Biostrings
+[CNTools]: http://bioconductor.org/packages/CNTools
+[ChIPQC]: http://bioconductor.org/packages/ChIPQC
+[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno
+[DESeq2]: http://bioconductor.org/packages/DESeq2
+[DiffBind]: http://bioconductor.org/packages/DiffBind
+[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments
+[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges
+[IRanges]: http://bioconductor.org/packages/IRanges
+[KEGGREST]: http://bioconductor.org/packages/KEGGREST
+[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC
+[rtracklayer]: http://bioconductor.org/packages/rtracklayer
+[Rsamtools]: http://bioconductor.org/packages/Rsamtools
+[ShortRead]: http://bioconductor.org/packages/ShortRead
+[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation
+[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering
+[VariantTools]: http://bioconductor.org/packages/VariantTools
+[biomaRt]: http://bioconductor.org/packages/biomaRt
+[cn.mops]: http://bioconductor.org/packages/cn.mops
+[h5vc]: http://bioconductor.org/packages/h5vc
+[edgeR]: http://bioconductor.org/packages/edgeR
+[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP
+[limma]: http://bioconductor.org/packages/limma
+[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq
+[phyloseq]: http://bioconductor.org/packages/phyloseq
+[snpStats]: http://bioconductor.org/packages/snpStats
 
-[AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi.html
-[BSgenome]: http://bioconductor.org/packages/BSgenome.html
-[Biostrings]: http://bioconductor.org/packages/Biostrings.html
-[CNTools]: http://bioconductor.org/packages/CNTools.html
-[ChIPQC]: http://bioconductor.org/packages/ChIPQC.html
-[ChIPpeakAnno]: http://bioconductor.org/packages/ChIPpeakAnno.html
-[DESeq2]: http://bioconductor.org/packages/DESeq2.html
-[DiffBind]: http://bioconductor.org/packages/DiffBind.html
-[GenomicAlignments]: http://bioconductor.org/packages/GenomicAlignments.html
-[GenomicRanges]: http://bioconductor.org/packages/GenomicRanges.html
-[IRanges]: http://bioconductor.org/packages/IRanges.html
-[KEGGREST]: http://bioconductor.org/packages/KEGGREST.html
-[PSICQUIC]: http://bioconductor.org/packages/PSICQUIC.html
-[Rsamtools]: http://bioconductor.org/packages/Rsamtools.html
-[ShortRead]: http://bioconductor.org/packages/ShortRead.html
-[VariantAnnotation]: http://bioconductor.org/packages/VariantAnnotation.html
-[VariantFiltering]: http://bioconductor.org/packages/VariantFiltering.html
-[VariantTools]: http://bioconductor.org/packages/VariantTools.html
-[biomaRt]: http://bioconductor.org/packages/biomaRt.html
-[cn.mops]: http://bioconductor.org/packages/cn.mops.html
-[h5vc]: http://bioconductor.org/packages/h5vc.html
-[edgeR]: http://bioconductor.org/packages/edgeR.html
-[ensemblVEP]: http://bioconductor.org/packages/ensemblVEP.html
-[limma]: http://bioconductor.org/packages/limma.html
-[metagenomeSeq]: http://bioconductor.org/packages/metagenomeSeq.html
-[phyloseq]: http://bioconductor.org/packages/phyloseq.html
-[snpStats]: http://bioconductor.org/packages/snpStats.html
-
-[org.Hs.eg.db]: http://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
-[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/release/data/annotation/html/TxDb.Hsapiens.UCSC.hg19.knownGene.html
-[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/release/data/annotation/html/BSgenome.Hsapiens.UCSC.hg19.html
+[org.Hs.eg.db]: http://bioconductor.org/packages/org.Hs.eg.db
+[TxDb.Hsapiens.UCSC.hg19.knownGene]: http://bioconductor.org/packages/TxDb.Hsapiens.UCSC.hg19.knownGene
+[BSgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/BSgenome.Hsapiens.UCSC.hg19

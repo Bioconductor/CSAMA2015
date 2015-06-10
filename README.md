@@ -16,3 +16,4 @@ structure
     CSAMA2015/materials/lectures/1_Monday/morgan-introduction.pdf
     CSAMA2015/materials/labs/1_Monday/<lab manuals and modest data>
 
+,etc

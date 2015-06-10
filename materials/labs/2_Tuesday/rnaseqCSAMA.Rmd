@@ -917,7 +917,7 @@ level in the denominator.  Here we extract results for the log2 of the
 fold change of one cell line over another:
 
 ```{r}
-results(dds, contrast=c("cell", "N061011", "N61311"))
+(res.cell <- results(dds, contrast=c("cell", "N061011", "N61311")))
 ```
 
 
@@ -1073,8 +1073,6 @@ of 0.01 means that the gene's expression tends to differ by typically
 \\(\sqrt{0.01} = 10\%\\) between samples of the same treatment group. For
 weak genes, the Poisson noise is an additional source of noise.
 
-<!-- add this back once you turn off transparency in plotDispEsts
-
 The function *plotDispEsts* visualizes *DESeq2*'s dispersion
 estimates: 
 
@@ -1093,8 +1091,6 @@ blue circles above the main "cloud" of points are genes which have
 high gene-wise dispersion estimates which are labelled as dispersion
 outliers. These estimates are therefore not shrunk toward the fitted
 trend line.
-
--->
 
 Another useful diagnostic plot is the histogram of the *p* values.
 
@@ -1227,42 +1223,26 @@ To get a list of all available key types, use:
 columns(org.Hs.eg.db)
 ```
 
-**TODO**: here use mapIds() from the *AnnotationDbi* package.
-
-Converting IDs with the native functions from the *AnnotationDbi*
-package is a bit cumbersome, so we provide the following convenience
-function (without explaining how exactly it works):
+We can use the *mapIds* function to add invidual columns to our results
+table. To add the gene symbol and Entrez ID, we call *mapIds* twice:
 
 ```{r}
-convertIDs <- function( ids, from, to, db, ifMultiple=c("putNA", "useFirst")) {
-  stopifnot( inherits( db, "AnnotationDb" ) )
-  ifMultiple <- match.arg( ifMultiple )
-  suppressWarnings( selRes <- AnnotationDbi::select(
-    db, keys=ids, keytype=from, columns=c(from,to) ) )
-  if ( ifMultiple == "putNA" ) {
-    duplicatedIds <- selRes[ duplicated( selRes[,1] ), 1 ]
-    selRes <- selRes[ ! selRes[,1] %in% duplicatedIds, ]
-  }
-  return( selRes[ match( ids, selRes[,1] ), 2 ] )
-}
-```
-
-This function takes a list of IDs as first argument and their key type
-as the second argument. The third argument is the key type we want to
-convert to, the fourth is the *AnnotationDb* object to use. Finally,
-the last argument specifies what to do if one source ID maps to
-several target IDs: should the function return an NA or simply the
-first of the multiple IDs? To convert the Ensembl IDs in the rownames
-of `res` to gene symbols and add them as a new column, we use:
-
-```{r}
-res$hgnc_symbol <- convertIDs(row.names(res), "ENSEMBL", "SYMBOL", org.Hs.eg.db)
-res$entrezgene <- convertIDs(row.names(res), "ENSEMBL", "ENTREZID", org.Hs.eg.db)
+res$symbol <- mapIds(org.Hs.eg.db, 
+                     keys=row.names(res), 
+                     column="SYMBOL", 
+                     keytype="ENSEMBL",
+                     multiVals="first")
+res$entrez <- mapIds(org.Hs.eg.db, 
+                     keys=row.names(res), 
+                     column="ENTREZID", 
+                     keytype="ENSEMBL",
+                     multiVals="first")
 ```
 
 Now the results have the desired external gene ids:
+
 ```{r}
-resOrdered <- res[order(res$pvalue),]
+resOrdered <- res[order(res$padj),]
 head(resOrdered)
 ```
 
@@ -1292,7 +1272,64 @@ and boxplots summarizing the normalized counts across groups.
 library("ReportingTools")
 ```
 
-**TODO** add this
+The most basic report is just a nicer HTML interface to the results table in R. We convert our results object into a dataframe and pass this to the ReportingTools functions. Here we will take just the top 1000 genes:
+
+```{r}
+resTop <- head(resOrdered,1000)
+resTop <- as(resTop, "data.frame")
+resTop <- resTop[,c("padj","baseMean","log2FoldChange","pvalue",
+                    "symbol","entrez")]
+resTop$ensembl <- rownames(resTop)
+```
+
+There are three steps: (1) initializing a report, (2) publishing (pushing) the results to the report, and (3) finishing the report. The report will be written in a directory `reports` created in the current working directory.
+
+```{r eval=FALSE}
+getwd()
+htmlRep <- HTMLReport(shortName = "airway_DE_report", 
+                      title = "Airway differential expression analysis 06/2015",
+                      reportDirectory = "./reports")
+publish(resTop, htmlRep)
+finish(htmlRep)
+```
+
+We can now open in a web browser the file `./reports/airway_DE_report.html`. This gives a readable report with pagination, as well as sortable, filterable numeric columns, and a search function.
+
+We can also use some of the built-in functionality of *ReportingTools*
+for *DESeq2* objects (there are similar functions for *edgeR* and *limma*
+objects).
+
+By including the *DESeqDataSet* along with a `factor` indicating the 
+condition of the samples, the output will include boxplots of normalized
+counts. Remember, though that our statistical test was not just of 
+the differences across dexamethasone treatment, but the differences
+of the pairs (taking account of the cell line information).
+
+Additionally, if we change the primary ID of our dataset to be
+Entrez IDs, then ReportingTools will also include the gene 
+symbol, name and a link to an external database. In order to see 
+what this looks like, let's create a subset of the results table
+and *DESeqDataSet* in the same order: the top 50 genes by adjusted p-value.
+We then add the Entrez ID as the rownames of both objects.
+
+```{r}
+resReport <- head(resOrdered, 50)
+ddsReport <- dds[ rownames(resReport), ]
+rownames(resReport) <- resReport$entrez
+rownames(ddsReport) <- rownames(resReport)
+```
+
+Now we can pass these objects to ReportingTools:
+
+```{r eval=FALSE}
+htmlRep <- HTMLReport(shortName = "airway_DE_report", 
+                      title = "Airway differential expression analysis 06/2015",
+                      reportDirectory = "./reports")
+publish(resReport, htmlRep, DataSet=ddsReport, 
+        annotation.db="org.Hs.eg.db", 
+        n=50, factor=dds$dex)
+finish(htmlRep)
+```
 
 <a id="methods"></a>
 
@@ -1302,11 +1339,15 @@ library("ReportingTools")
 # careful when filtering if groups are not balanced
 filter <- rowMeans(assay(airway)) > 5
 airwayFilt <- airway[ filter, ]
+```
 
+```{r}
 dds <- DESeqDataSet(airwayFilt, design = ~ cell + dex)
 dds <- DESeq(dds)
 res <- results(dds, independentFiltering=FALSE)
+```
 
+```{r}
 library("edgeR")
 coldata <- as.data.frame(colData(dds))
 design <- model.matrix(~ cell + dex, data=coldata)
@@ -1318,7 +1359,9 @@ dgel <- estimateGLMTagwiseDisp(dgel,design=design)
 edgerfit <- glmFit(dgel,design=design)
 lrt <- glmLRT(edgerfit, coef=5)
 tt <- topTags(lrt, n=nrow(dgel), sort.by="none")
+```
 
+```{r}
 library("limma")
 dgel.voom <- DGEList(assay(airwayFilt))
 dgel.voom <- calcNormFactors(dgel.voom)
@@ -1326,10 +1369,14 @@ v <- voom(dgel.voom,design,plot=FALSE)
 vfit <- lmFit(v,design)
 vfit <- eBayes(vfit)
 lvtt <- topTable(vfit, coef=5, n=nrow(dgel.voom), sort.by="none")
+```
 
+```{r}
 alpha <- 0.01
 table("deseq2"=res$padj < alpha, "edger"=tt$table$FDR < alpha, "limma"=lvtt$adj.P.Val < alpha)
+```
 
+```{r}
 bartab <- function(x,y,z,names,skipNone=FALSE,...) {
   x <- factor(x,c("FALSE","TRUE"))
   y <- factor(y,c("FALSE","TRUE"))
@@ -1344,22 +1391,32 @@ bartab <- function(x,y,z,names,skipNone=FALSE,...) {
   }
   barplot(tabs, ...)
 }
+```
 
+```{r}
 bartab(res$padj < alpha, tt$table$FDR < alpha, lvtt$adj.P.Val < alpha, c("DESeq2","edgeR","limma"))
+```
 
+```{r}
 plot(rank(res$padj),rank(tt$table$FDR))
 plot(rank(res$padj),rank(lvtt$adj.P.Val))
 plot(rank(tt$table$FDR),rank(lvtt$adj.P.Val))
+```
 
+```{r}
+# testing against a threshold
+# DESeq2
 lfc <- 0.5
 resLFC <- results(dds, independentFiltering=FALSE, lfcThreshold=lfc)
-
+# edgeR 
 tr <- glmTreat(edgerfit, coef=5, lfc=lfc)
 ttLFC <- topTags(tr, n=nrow(dgel), sort.by="none")
-
+# limma + voom
 vtr <- treat(vfit, lfc=lfc)
 lvttLFC <- topTreat(vtr, coef=5, n=nrow(dgel.voom), sort.by="none")
+```
 
+```{r}
 alpha <- 0.1
 bartab(resLFC$padj < alpha, ttLFC$table$FDR < alpha, lvttLFC$adj.P.Val < alpha, c("DESeq2","edgeR","limma"),skipNone=TRUE)
 ```

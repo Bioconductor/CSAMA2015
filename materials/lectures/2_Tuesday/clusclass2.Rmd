@@ -56,13 +56,11 @@ grid.raster(im)
 
 ## Species and organ of origin: microarrays and orthologues (McCall et al., _NAR_ 2012)
 
-```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=3.9}
+```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=4.4}
 library(png)
 im = readPNG("barcoTree.png")
 grid.raster(im)
 ```
-
-- How do you interpret gene expression snapshots?
 
 ## Species, organ of origin, and batch: RNA-seq and orthologues (Lin et al., _PNAS_ 2014)
 
@@ -73,16 +71,6 @@ grid.raster(im)
 ```
 
 - Between-species disparity stronger than within-organ similarity
-
-## Caveat: confounded design (Gilad, Mizrahi-Man, f1000 2015)
-
-```{r basicsnydes,fig=TRUE,echo=FALSE,fig.height=3.6}
-library(png)
-im = readPNG("giladDesign.png")
-grid.raster(im)
-```
-
-- CAN NOT DISTINGUISH SPECIES-BASED FROM TECHNICAL VARIATION
 
 ## Three data analysis problems {.smaller}
 
@@ -132,6 +120,19 @@ grid.raster(im)
     - V-fold cross-validation (V splits)
     - leave-one-out cross-validation (N splits)
 
+## Interactive exploration of clustering {.columns-2}
+```{r lookint,fig=TRUE,echo=FALSE,fig.width=5.1}
+library(png)
+im = readPNG("toolpic.png")
+grid.raster(im)
+```
+
+   - number of genes; distance between objects
+   - agglomeration method for tree construction
+   - number of groups via cutree
+   - mean bootstrapped Jaccard similarity
+   - PC ordination with colors
+   - assignment (mouseover)
 
 ```{r sta, echo=FALSE}
 data(tissuesGeneExpression)
@@ -143,12 +144,13 @@ tiss = tiss[, tiss$SubType == "normal"]
 #datatable(pData(tiss))
 ```
 
-## Exploring clustering criteria with barcode data
+## Exploring clusters with tissue-of-origin data
 
 ```{r lkwid, echo=FALSE}
 hclustWidget = function(mat) {
  shinyApp(ui = fluidPage(
   fluidRow(
+   column(3,  numericInput("ngenes", label = "N genes:", 500, min = 2, max = 100000)),
    column(3,  selectInput("distmeth", label = "Distance method:",
                choices = c("euclidean", "maximum", "manhattan",
                "binary"), selected = "euclidean")),
@@ -156,8 +158,7 @@ hclustWidget = function(mat) {
    column(3,  selectInput("fusemeth", label = "Agglomeration method:",
                choices = c("complete", "average", "ward.D2", "single",
                    "median", "centroid"), selected="complete")),
-   column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9)),
-   column(3,  numericInput("ngenes", label = "N genes:", 500, min = 2, max = 100000))
+   column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9))
           ),
   fluidRow(column(8, plotOutput("tree")), column(4, ggvisOutput("pcp")))
  ), server= function(input, output, session) {
@@ -193,18 +194,95 @@ sink(NULL)
       P1 %>% bind_shiny("pcp")
 } )
 }
-etiss = t(exprs(tiss))
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
 rownames(etiss) = substr(tiss$Tissue,1,5)
 hclustWidget(etiss)
 ```
 
+## Some definitions
+
+```{r distdef,fig=TRUE,echo=FALSE,fig.height=4.99}
+library(png)
+im = readPNG("metricDef.png")
+grid.raster(im)
+```
+
 ## What is the ward.D2 agglomeration method?
+- Enables very rapid update upon change of distance or # genes
 
 ```{r wardalg,fig=TRUE,echo=FALSE,fig.height=4.99}
 library(png)
 im = readPNG("wards.png")
 grid.raster(im)
 ```
+
+## What is the Jaccard similarity coefficient?
+
+```{r jacc,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("jaccdef.png")
+grid.raster(im)
+```
+
+## What is the bootstrap distribution of a statistic? {.smaller}
+- classic example from 1983: correlation of grades and achievement test scores
+- arbitrary replication of multivariate records
+
+```{r boo1,fig=TRUE,echo=FALSE,fig.height=4.99}
+library(png)
+im = readPNG("bootstrap1.png")
+grid.raster(im)
+```
+
+## What is the bootstrap distribution of a statistic?
+- sampling with replacement from the base records
+
+```{r boo2,fig=TRUE,echo=FALSE,fig.height=4.99}
+library(png)
+im = readPNG("bootstrap2.png")
+grid.raster(im)
+```
+
+## How to use the bootstrap distribution?
+- estimate quantiles of the empirical distribution
+
+```{r boo3,fig=TRUE,echo=FALSE,fig.height=4.99}
+library(png)
+im = readPNG("bootstrap3.png")
+grid.raster(im)
+```
+
+## Bootstrap distributions of Jaccard
+```{r echo=FALSE, fig=TRUE}
+dojac = function() {
+data(tissuesGeneExpression)
+library(Biobase)
+tiss = ExpressionSet(e)
+rownames(tab) = colnames(e)
+pData(tiss) = tab
+tiss = tiss[, tiss$SubType == "normal"]
+
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
+rownames(etiss) = substr(tiss$Tissue,1,5)
+dm = dist(etiss[,1:250])
+sink(tempfile())
+cb <- clusterboot(dm, clustermethod=hclustCBI, method="ward.D2", k=6, showplots=FALSE, scaling=FALSE)
+sink(NULL)
+par(mfrow=c(2,3))
+for (i in 1:6) {hist(cb$bootresult[i,], xlim=c(0,1),
+   main=paste0("Jacc. cl ", i)); abline(v=cb$bootmean[i])}
+}
+dojac()
+```
+- dispersion should be reckoned
+
+
 
 ## Summary 
 - agglomeration procedure has substantial impact

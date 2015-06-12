@@ -3,8 +3,10 @@ title: "Reproducible research and `R` authoring with markdown and `knitr`"
 author: "Laurent Gatto"
 date: "`r doc_date()`"
 output:
-- BiocStyle::pdf_document
-- BiocStyle::html_document
+  BiocStyle::pdf_document:
+    toc_depth: 2
+  BiocStyle::html_document:
+    toc_depth: 2
 ---
 
 <!-- to compile this:

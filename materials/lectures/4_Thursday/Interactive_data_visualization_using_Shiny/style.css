@@ -1,0 +1,19 @@
+pre {
+  font-size: 18px;
+  line-height: 21px;
+}
+iframe {
+  height: 600px;
+  width: 100%;
+  margin-top: -50px;
+}
+.title-slide hgroup h1 {
+  color: #1a81c2;
+  font-size: 60px;
+}
+.title-slide hgroup p {
+  font-size: 36px;
+}
+h2 {
+  color: #87b13f;
+}

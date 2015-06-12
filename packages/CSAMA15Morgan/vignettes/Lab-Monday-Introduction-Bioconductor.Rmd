@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab, part B.1: Introduction to _Bioconductor_"
+title: "Monday Lab B.1: Introduction to _Bioconductor_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab, part B.1: Introduction to Bioconductor}
+  % \VignetteIndexEntry{Monday Lab B.1: Introduction to Bioconductor}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 

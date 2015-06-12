@@ -1,0 +1,231 @@
+\documentclass{beamer}
+\usepackage{BioconductorSlides}
+\title{Introduction to \R{} and \Bioconductor{}}
+\author{Martin Morgan 
+  (\href{mailto:mtmorgan@fredhutch.org}{mtmorgan@fredhutch.org}) \\
+  Fred Hutchinson Cancer Research Center \\
+  Seattle, WA, USA
+}
+\date{15 June, 2015}
+
+\begin{document}
+
+<<setup, echo=FALSE>>=
+suppressPackageStartupMessages({
+    library(ggplot2)
+})
+@ 
+
+\maketitle
+
+\section{R}
+
+\begin{frame}{\R: Statistical Computing Environment}
+  \begin{itemize}
+  \item Vectors -- logical, integer, numeric, character, \ldots
+    \begin{itemize}
+    \item \Rcode{list()} -- contains other vectors (recursive)
+    \item \Rcode{factor()}, \Rcode{NA} -- statistical concepts
+    \item Can be \emph{named} -- \Rcode{c(Germany=1, Argentina=0)}
+    \end{itemize}
+  \item \Rcode{matrix()}, \Rcode{array()} -- a vector with a `dim'
+    attribute.
+  \item \Rcode{data.frame()} -- like spreadsheets; list of equal
+    length vectors.
+    \begin{itemize}
+    \item Homogenous types within a column, heterogenous types across
+      columns.
+    \item An example of an \R{} \emph{class}.
+    \end{itemize}
+  \item Other classes -- more complicated arrangement of vectors.
+    \begin{itemize}
+    \item Examples: the value returned by \Rcode{lm()}; the
+      \Rclass{DNAStringSet} class used to hold DNA sequences.
+    \item plain, `accessor', `generic', and `method' functions
+    \end{itemize}
+  \item Packages -- base, recommended, contributed.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\R: Statistical Computing Environment}
+
+<<R>>=
+1 + 2                       # calculator
+x <- rnorm(1000)            # vectors, statistical
+y <- x + rnorm(1000, sd=.8) # vectorized calculation
+df <- data.frame(x=x, y=y)  # object construction
+fit <- lm(y ~ x, df)        # linear model, formula
+class(fit)                  # discovery
+@ 
+
+\end{frame}
+
+\begin{frame}[fragile]{\R: Statistical Computing Environment}
+  
+  \begin{columns}
+    \column{.5\textwidth}
+<<R-plot, fig=TRUE>>=
+plot(y ~ x, df, cex.lab=2)
+abline(fit, col="red", 
+       lwd=2)
+@ 
+    \column{.5\textwidth}
+<<ggplot, fig=TRUE>>=
+library(ggplot2)
+ggplot(df, aes(x, y)) + 
+    geom_point() + 
+    stat_smooth(method="lm")
+@ 
+  \end{columns}
+  
+\end{frame}
+
+\begin{frame}{\R: Statistical Computing Environment}
+  Programming concepts
+  \begin{itemize}
+  \item Functions -- built-in (e.g., \Rcode{rnorm()}); user-defined
+  \item Subsetting -- logical, numeric, character; \Rcode{df[df\$x > 0,]}; 
+  \item Iteration -- over vector elements, \Rcode{lapply()},
+    \Rcode{mapply()}, \Rcode{apply()}, \ldots; e.g., \Rcode{lapply(df,
+      mean)}
+  \end{itemize}
+\end{frame}
+
+<<symgo-input, echo=FALSE>>=
+fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+@ 
+
+\begin{frame}[fragile]{\R: Statistical Computing Environment}
+
+<<symgo1, eval=FALSE>>=
+fl <- file.choose()         # 'symgo.csv' text file
+@ 
+<<symgo>>=
+csv <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
+head(csv, 3)
+genesets <- aggregate(SYMBOL ~ GO, csv, c)
+head(genesets, 3)
+@ 
+
+\end{frame}
+
+\begin{frame}{\R: help!}
+  \begin{itemize}
+  \item \Rcode{?data.frame}
+  \item \Rcode{methods(lm)}, \Rcode{methods(class=class(fit))}
+  \item \Rcode{?"plot<tab>"}
+  \item \Rcode{help(package="Biostrings")}
+  \item \Rcode{vignette(package="GenomicRanges")}
+  \item \href{http://stackoverflow.com/questions/tagged/r}{StackOverflow};
+    R-help mailing list
+  \end{itemize}
+  \medskip\par
+  ``Hey, can you help me with this? I tried\ldots''
+\end{frame}
+
+\section{Bioconductor}
+
+\begin{frame}{\Bioconductor{}}
+  Analysis \& comprehension of high-throughput genomic data
+  \begin{itemize}
+  \item $>12$ years old; 1024 packages; widely used
+  \item Sequencing (RNAseq, ChIPseq, variants, copy number, \ldots),
+    microarrays, flow cytometery, proteomics, \ldots
+  \item \url{http://bioconductor.org}, \url{https://support.bioconductor.org}
+  \end{itemize}
+  Themes
+  \begin{itemize}
+  \item Interoperable -- classes to work with genome-scale data,
+    shared (where possible!) across packages
+  \item Usable -- package vignettes, man pages, examples, \ldots
+  \item Reproducible -- `release' and `devel' versions, updated every
+    6 months
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\Bioconductor: \Biocpkg{GenomicRanges}}
+  \includegraphics[width=\textwidth, height=!]{our_figures/GRanges}
+  \begin{itemize}
+  \item Data: aligned reads, called peaks, SNP locations, CNVs, \ldots
+  \item Annotation: gene models, variants, regulatory regions, \ldots
+  \item \Rcode{findOverlaps()}, \Rcode{nearest()}, and many other
+    useful range-based operations.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{\Bioconductor: \Biocpkg{SummarizedExperiment} motivation}
+  Cisplatin-resistant non-small-cell lung cancer gene sets
+  \medskip\par
+  \begin{columns}
+    \column{.5\textwidth}
+    \includegraphics[width=\textwidth,height=!]{our_figures/HsuEtAl-F1-large-a.jpg}
+    \par Hsu \emph{et al.} 2007 J Clin Oncol 25:
+    \href{http://jco.ascopubs.org/content/25/28/4350.abstract}{4350-4357}
+    (\href{http://jco.ascopubs.org/content/28/35/5229.long}{retracted})
+    \column{.5\textwidth}
+    \includegraphics[width=\textwidth,height=!]{our_figures/BaggerlyCoombes2009-fig2a}
+    \par Baggerly \& Coombes 2009 Ann Appl Stat
+    \href{http://projecteuclid.org/DPubS?service=UI&version=1.0&verb=Display&handle=euclid.aoas/1267453942}{3: 1309-1334}
+  \end{columns}
+  \medskip\par
+  Coordinated, programmatic manipulation of feature, sample, and assay data
+\end{frame}
+
+\begin{frame}[fragile]{\Bioconductor: \Biocpkg{SummarizedExperiment}}
+  \begin{columns}
+    \column{.5\textwidth}
+    \includegraphics{our_figures/SE_Description.png}
+    \column{.5\textwidth}
+    Regions of interest $\times$ samples
+    \begin{itemize}
+    \item \Rcode{assay()} -- \Rcode{matrix}, e.g., counts of reads
+      overlapping regions of interest.
+    \item \Rcode{rowData()} -- regions of interest as \Rcode{GRanges}
+      or \Rcode{GRangesList}
+    \item \Rcode{colData()} -- \Rcode{DataFrame} describing samples.
+    \end{itemize}
+  \end{columns}
+  \medskip\par
+<<se, eval=FALSE>>=
+assay(se)[,se$Treatment == "Control"]  # Control counts
+@     
+\end{frame}
+
+\begin{frame}{\Bioconductor: a fun demo of \emph{GRanges} interoperability}
+  \begin{description}
+  \item[\Biocpkg{GenomicFeatures}] And `annotation' packages to
+    represent gene models as \Rcode{GRanges}.
+  \item[\Biocpkg{GenomicAlignments}] To input aligned reads as
+    \Rcode{GRanges}.
+  \item[\Biocpkg{Gviz}] For visualization.
+  \item[\software{shiny}] For interactivity.
+  \end{description}
+\end{frame}
+
+\begin{frame}{\Bioconductor: Resources}
+  \url{http://bioconductor.org}
+  \begin{itemize}
+  \item Packages -- \href{}{biocViews}, landing pages (e.g.,
+    \Biocpkg{AnnotationHub})
+  \item Course \& conference material; work flows; publications
+  \item Developer resources
+  \end{itemize}
+  \url{https://support.bioconductor.org}
+  \begin{itemize}
+  \item Queston \& answer forum for users; usually fast, expert,
+    friendly responses
+  \item Contributed tutorials, news
+  \end{itemize}
+  Citations
+  \begin{itemize}
+  \item Huber et al. (2015) Orchestrating high-throughput genomic
+    analysis with \Bioconductor. Nature Methods
+    12:\href{http://dx.doi.org/10.1038/nmeth.3252}{115-121}.
+  \item Lawrence et al. (2013) Software for Computing and Annotating
+    Genomic Ranges. PLoS Comput Biol 9(8):
+    \href{http://dx.doi.org/10.1371/journal.pcbi.1003118}{e1003118}.
+  \end{itemize}
+
+\end{frame}
+
+\end{document}

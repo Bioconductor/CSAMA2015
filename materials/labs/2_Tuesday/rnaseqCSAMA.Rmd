@@ -901,12 +901,6 @@ values can be assigned `NA` if the gene was excluded from analysis
 because it contained an extreme count outlier. For more information,
 see the outlier detection section of the vignette.
 
-If you use *DESeq2* results in published research, please cite our
-methods paper which you can find by typing `citation("DESeq2")`
-(and the same holds for other Bioconductor packages).
-This helps to support the individuals who put time into open source
-software for genomic analysis.
-
 ### Other comparisons
 
 In general, the results for a comparison of any two levels of a
@@ -1335,17 +1329,35 @@ finish(htmlRep)
 
 ## Ease of exchanging methods
 
+It is easy, within Bioconductor, to use different
+statistical methods for differential gene expression.
+Here we will compare the *DESeq2* results with that
+from two other popular packages, *edgeR* and *limma* with the 
+*voom* transformation. 
+
+In order to make the results more comparable across packages
+we will not use the independent filtering function of *DESeq2*.
+We therefore need to set a filter on the mean of normalized counts,
+to remove the genes from analysis which have very small counts.
+
 ```{r}
 # careful when filtering if groups are not balanced
 filter <- rowMeans(assay(airway)) > 5
 airwayFilt <- airway[ filter, ]
 ```
 
+Now we call *DESeq* and *results* on the filtered
+dataset:
+
 ```{r}
 dds <- DESeqDataSet(airwayFilt, design = ~ cell + dex)
 dds <- DESeq(dds)
 res <- results(dds, independentFiltering=FALSE)
 ```
+
+The steps for the *edgeR* software are similar (estimation of 
+factors to account for library size, estimation of dispersion 
+and testing):
 
 ```{r}
 library("edgeR")
@@ -1361,6 +1373,10 @@ lrt <- glmLRT(edgerfit, coef=5)
 tt <- topTags(lrt, n=nrow(dgel), sort.by="none")
 ```
 
+The *limma+voom* pipeline involves the *voom* function
+which transforms the data to the log scale and determines
+the dependence of the variance of log counts over the mean.
+
 ```{r}
 library("limma")
 dgel.voom <- DGEList(assay(airwayFilt))
@@ -1371,10 +1387,18 @@ vfit <- eBayes(vfit)
 lvtt <- topTable(vfit, coef=5, n=nrow(dgel.voom), sort.by="none")
 ```
 
+We can now compare the results from the three packages, 
+thresholding at a given FDR value. The three packages
+are highly consistent in the set of genes with very low 
+FDR (1%).
+
 ```{r}
 alpha <- 0.01
 table("deseq2"=res$padj < alpha, "edger"=tt$table$FDR < alpha, "limma"=lvtt$adj.P.Val < alpha)
 ```
+
+We can visualize the overlap more easily using a barplot.
+The following function will convert the table into a barplot:
 
 ```{r}
 bartab <- function(x,y,z,names,skipNone=FALSE,...) {
@@ -1393,20 +1417,21 @@ bartab <- function(x,y,z,names,skipNone=FALSE,...) {
 }
 ```
 
-```{r}
-bartab(res$padj < alpha, tt$table$FDR < alpha, lvtt$adj.P.Val < alpha, c("DESeq2","edgeR","limma"))
-```
+Calling that function:
 
 ```{r}
-plot(rank(res$padj),rank(tt$table$FDR))
-plot(rank(res$padj),rank(lvtt$adj.P.Val))
-plot(rank(tt$table$FDR),rank(lvtt$adj.P.Val))
+par(mar=c(5,8,3,3))
+bartab(res$padj < alpha, tt$table$FDR < alpha, lvtt$adj.P.Val < alpha, c("DESeq2","edgeR","limma"), main="FDR 1%", horiz=TRUE, las=1)
 ```
+
+We can also test for log fold changes higher than 
+a threshold, and compare these sets across software 
+packages:
 
 ```{r}
 # testing against a threshold
 # DESeq2
-lfc <- 0.5
+lfc <- 1
 resLFC <- results(dds, independentFiltering=FALSE, lfcThreshold=lfc)
 # edgeR 
 tr <- glmTreat(edgerfit, coef=5, lfc=lfc)
@@ -1416,9 +1441,15 @@ vtr <- treat(vfit, lfc=lfc)
 lvttLFC <- topTreat(vtr, coef=5, n=nrow(dgel.voom), sort.by="none")
 ```
 
+Again, many of the genes are in the intersection of the 
+three packages:
+
 ```{r}
+par(mar=c(5,8,3,3))
 alpha <- 0.1
-bartab(resLFC$padj < alpha, ttLFC$table$FDR < alpha, lvttLFC$adj.P.Val < alpha, c("DESeq2","edgeR","limma"),skipNone=TRUE)
+bartab(resLFC$padj < alpha, ttLFC$table$FDR < alpha, lvttLFC$adj.P.Val < alpha,
+       c("DESeq2","edgeR","limma"), skipNone=TRUE,
+       main="LFC > 1: FDR 10%", horiz=TRUE, las=1)
 ```
 
 ## Session information

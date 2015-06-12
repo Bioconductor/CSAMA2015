@@ -81,8 +81,52 @@ plot(y ~ x, df)
 abline(fit, col="red", lwd=3, lty=2) # a function, not generic.method
 ```
 
+Programming
 
-# Case study: ALL phenotypic data
+- Iteration:
+  - `lapply()`, `sapply()`, `vapply()`
+  - `mapply()`
+  - `apply()`
+  - `repeat {}`, `for () {}`
+- Conditional: `if () {} else {}`
+- Functions (see table below for a few favorites)
+- Your own functions `fun <- function() {}`
+
+Programming example -- group 1000 SYMBOLs into GO identifiers
+
+```{r lapply}
+## example data
+fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+symgo <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
+head(symgo)
+dim(symgo)
+length(unique(symgo$SYMBOL))
+## split-sapply
+go2sym <- split(symgo$SYMBOL, symgo$GO)
+len1 <- sapply(go2sym, length)          # compare with lapply, vapply
+## built-in functions for common actions
+len2 <- lengths(go2sym)
+identical(len1, len2)
+## smarter built-in functions, e.g., omiting NAs
+len3 <- aggregate(SYMBOL ~ GO, symgo, length)
+head(len3)
+## more fun with aggregate()
+head(aggregate(GO ~ SYMBOL, symgo, length))
+head(aggregate(SYMBOL ~ GO, symgo, c))
+## your own function -- unique, lower-case identifiers
+uidfun  <- function(x) {
+    unique(tolower(x))
+}
+head(aggregate(SYMBOL ~ GO , symgo, uidfun))
+## as an 'anonymous' function
+head(aggregate(SYMBOL ~ GO, symgo, function(x) {
+    unique(tolower(x))
+}))
+```
+
+# Case studies
+
+## ALL phenotypic data
 
 These case studies serve as refreshers on _R_ input and manipulation
 of data.
@@ -190,7 +234,7 @@ t.test(age ~ mol.biol, bcrabl)
 boxplot(age ~ mol.biol, bcrabl)
 ```
 
-# Case study: weighty matters
+## Weighty matters
 
 This case study is a second walk through basic data manipulation and
 visualization skills.  We use data from the US Center for Disease
@@ -214,7 +258,7 @@ stopifnot(file.exists(fname))
 brfss <- read.csv(fname)
 ```
 
-## Exercises: base plotting functions
+**Base plotting functions**
 
 1. Explore the data using `class()`, `dim()`, `head()`, `summary()`,
    etc. Use `xtabs()` to summarize the number of males and females in
@@ -266,7 +310,7 @@ brfss <- read.csv(fname)
    formula). Try adding the [hexbin][] library to your R session
    (using `library()`) and creating a `hexbinplot()`.
 
-## Exercises: Trellis graphics and the _lattice_ package
+**Trellis graphics and the _lattice_ package**
 
 R has a number of additional plotting facilities, both as part of the
 'base' distribution and user-contributed packages. The _lattice_

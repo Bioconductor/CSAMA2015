@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab, part B.3: Annotation Resources"
+title: "Monday Lab B.3: Annotation Resources"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab, part B.3: Annotation Resources}
+  % \VignetteIndexEntry{Monday Lab B.3: Annotation Resources}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -74,6 +74,8 @@ for retrieving annotations are summarized in the table.
 |            | `transcriptsBy()` , `exonsBy()`       | Features group by  gene, transcript, etc., as `GRangesList`.     |
 |            | `cdsBy()`                             |                                                                  |
 
+### Exercise
+
 **Exercise**: This exercise illustrates basic use of the `select'
 interface to annotation packages.
 
@@ -126,6 +128,8 @@ to multiple data sets; the [biomaRt][] package provides methods for
 mart and data set discovery, and a standard method `getBM()` to
 retrieve data.
 
+### Exercise
+
 *Exercise*
 
 1. Load the [biomaRt][] package and list the available marts.  Choose
@@ -158,6 +162,8 @@ myAttributes <- c("ensembl_gene_id","chromosome_name")
 res <- getBM(attributes =  myAttributes, filters =  myFilter,
              values =  myValues, mart = ensembl)
 ```
+
+### Exercise
 
 *Exercise*
 
@@ -193,6 +199,8 @@ genome-centric annotations include defining regions of interest for
 counting aligned reads in RNA-seq experiments and retrieving DNA
 sequences underlying regions of interest in ChIP-seq analysis, e.g.,
 for motif characterization.
+
+### Exercise
 
 *Exercise*
 
@@ -306,6 +314,8 @@ The [rtracklayer][] package allows us to query the UCSC genome
 browser, as well as providing `import()` and
 `export()` functions for common annotation file formats like
 GFF, GTF, and BED.
+
+### Exercise
 
 *Exercise*
 

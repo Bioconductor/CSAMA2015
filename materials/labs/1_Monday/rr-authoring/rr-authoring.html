@@ -10,7 +10,7 @@
 
 <meta name="author" content="Laurent Gatto" />
 
-<meta name="date" content="2015-06-12" />
+<meta name="date" content="2015-06-13" />
 
 <title>Reproducible research and R authoring with markdown and knitr</title>
 
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="header">
 <h1 class="title">Reproducible research and <code>R</code> authoring with markdown and <code>knitr</code></h1>
 <h4 class="author"><em>Laurent Gatto</em></h4>
-<h4 class="date"><em>12 June 2015</em></h4>
+<h4 class="date"><em>13 June 2015</em></h4>
 </div>
 
 <h1>Contents</h1>
@@ -94,28 +94,28 @@ or just call make
 <blockquote>
 <p>This content is adapted from the <a href="http://rmarkdown.rstudio.com/">RStudio <code>R</code> Markdown - Dynamic Documents of R</a>, <a href="http://rmarkdown.rstudio.com/authoring_basics.html">Markdown basics</a> and <a href="http://rmarkdown.rstudio.com/authoring_rcodechunks.html">R code chunks</a> tutorials.</p>
 </blockquote>
-<p>This session introduces tools to author documents that include dynamically generated analysis results (tables, figures, …) produced with <code>R</code>. Bringing data, results and their interpretation together in a single, coherent document is invaluable to keep track of long and complex analyses, assure reproducibility of the pipeline (any updates at the data or analysis level are propagated at the report level) and the final report and to comprehensively communicate these results to collaborators. A popular solution for this is <em>literate programming</em>, a technique and set of tools that permit to</p>
+<p>This session introduces tools to author documents that include dynamically generated analysis results (tables, figures, …) produced with <code>R</code>. Bringing data, results and their interpretation together in a single, coherent document is invaluable to keep track of long and complex analyses, assure reproducibility of the pipeline and the final report (any updates at the data or analysis level are propagated at the report level) and to comprehensively communicate these results to collaborators. A popular solution for this is <em>literate programming</em>, a technique and set of tools that permit to</p>
 <ol style="list-style-type: decimal">
-<li>Write text and code within a single document. Here we will use the simple markdown syntax and include <code>R</code> code chunks; such documents are denoted <em>R markdown</em> documents and have the <code>Rmd</code> extension. More on this in the next section.</li>
+<li>Write text and code within a single document. Here we will use the simple <em>markdown</em> syntax and include <code>R</code> code chunks; such documents are denoted <em>R markdown</em> documents and have the <code>Rmd</code> extension. More on this in the next section.</li>
 <li>Extract and execute the code: this is called <em>tangling</em>.</li>
 <li>Replace the code chunks with their output into the original document: this is called <em>weaving</em>.</li>
 <li>Render the document into a final, easily read format such as pdf or html.</li>
 </ol>
-<p>Steps 2 to 4 are can be executed individually or automated into a single command such as <code>knitr::knit2html</code> (that is function <code>knit2hrml</code> from the package <code>knitr</code>) or <code>rmarkdown::render</code>, or using editors such as RStudio.</p>
-<p>Other types of document and frameworks that combine a programming and authoring languages are <code>Sweave</code> files <code>Rnw</code> (that combine LaTeX and <code>R</code>), <a href="http://ipython.org/">IPython</a> for python and other languages, <a href="http://orgmode.org/manual/Working-With-Source-Code.html#Working-With-Source-Code">orgmode</a>, …</p>
+<p>Steps 2 to 4 are can be executed individually or automated into a single command such as <code>knitr::knit2html</code> (i.e. function <code>knit2html</code> from the package <code>knitr</code>) or <code>rmarkdown::render</code>, or using the RStudio editor.</p>
+<p>Other types of document and frameworks that combine a programming and authoring languages are <code>Sweave</code> files (with <code>Rnw</code> extension, that combine LaTeX and <code>R</code>), <a href="http://ipython.org/">IPython</a> for python and other languages, <a href="http://orgmode.org/manual/Working-With-Source-Code.html#Working-With-Source-Code">orgmode</a>, …</p>
 </div>
 <div id="r-markdown" class="section level1">
 <h1><span class="header-section-number">2</span> <code>R</code> Markdown</h1>
-<p>R Markdown is an authoring format that enables easy creation of dynamic documents, presentations, and reports from R. It combines the core syntax of <a href="http://daringfireball.net/projects/markdown/basics">markdown</a> (an easy-to-write plain text format) with embedded <code>R</code> code chunks that are run so their output can be included in the final document. <code>R</code> Markdown documents are fully <em>reproducible</em> (they can be automatically regenerated whenever underlying <code>R</code> code or data changes).</p>
-<p>This document describes <code>R</code> Markdown v2 based on <a href="http://yihui.name/knitr/">knitr</a> and <a href="http://johnmacfarlane.net/pandoc/"><code>pandoc</code></a>, the workhorse that converts markdown to html and many other formats. This implementation brings many enhancements to <code>R</code> Markdown. We will focus the generation of HTML and PDF documents, although other formats are available.</p>
+<p>R Markdown is an authoring format that enables easy creation of dynamic documents, presentations, and reports from R. It combines the core syntax of <a href="http://daringfireball.net/projects/markdown/basics">markdown</a> (an easy-to-write plain text format) with embedded <code>R</code> code chunks. <code>R</code> Markdown documents are fully <em>reproducible</em> (they can be automatically regenerated whenever underlying <code>R</code> code or data changes).</p>
+<p>This document describes <code>R</code> Markdown v2 based on <a href="http://yihui.name/knitr/">knitr</a> and <a href="http://johnmacfarlane.net/pandoc/"><code>pandoc</code></a>, the workhorse that converts markdown to html and many other formats. We will focus the generation of HTML and PDF documents, although other formats are available.</p>
 <p>Note that PDF output requires a full installation of TeX and that pandoc is a third party application that needs to be installed outside of <code>R</code> unless you use RStudio, which bundles all necessary <code>R</code> packages and <code>pandoc</code>.</p>
 <blockquote>
 <p><strong>Tip</strong></p>
-<p>We would also like to warn against using MS Word as output document, and this breaking the support for reproducibility. The final, compiled document should be used for rendering only (which is implicit for html of pdf files); editing should be performed on the original documents, i.e the <code>Rmd</code> file.</p>
+<p>We would also like to warn against using MS Word as output document, as this breaking the support for reproducibility. The final, compiled document should be used for rendering only (which is implicit for html of pdf files); editing should be performed on the original documents, i.e the <code>Rmd</code> file.</p>
 </blockquote>
 <div id="installation" class="section level2">
 <h2><span class="header-section-number">2.1</span> Installation</h2>
-<p>You can install the <code>R</code> Markdown package from CRAN as follows:</p>
+<p>You can install the the required package from CRAN as follows:</p>
 <pre class="r"><code>install.packages(&quot;knitr&quot;)
 install.packages(&quot;rmarkdown&quot;)</code></pre>
 <p>These packages are pre-installed with RStudio.</p>
@@ -135,7 +135,7 @@ install.packages(&quot;rmarkdown&quot;)</code></pre>
 </div>
 <div id="file-header" class="section level2">
 <h2><span class="header-section-number">2.3</span> File header</h2>
-<p>R Markdown version 2 uses an <em>optional</em> header to define the title, author and output formats of the document. Below, we want to use <code>html</code> as final format; replace with <code>pdf_document</code>.</p>
+<p>R Markdown version 2 uses an <em>optional</em> header to define the title, author and output formats of the document. Below, we want to use <code>html</code> as final format; replace with <code>pdf_document</code> to produce a pdf report.</p>
 <pre><code>---
 title: &quot;Title comes here&quot;
 author: &quot;Your name&quot;
@@ -148,11 +148,11 @@ output: html_document
 <p>If you are using RStudio, the simplest way to generate your final output is to open your <code>Rmd</code> file and click the <code>Knit HTML</code> (or <code>Knit PDF</code>, …) button.</p>
 <p>From <code>R</code>, you can use the <code>knitr::knit2html</code> or <code>rmarkdown::render</code> functions and give the <code>Rmd</code> source file as input.</p>
 <ol style="list-style-type: decimal">
-<li><p>Both options will first use the <code>knite::knit</code> function to <em>weave</em> the document and generate the markdown <code>md</code> file that includes the code outputs.</p></li>
-<li><p>The generation of the final output will render the final document using <code>markdown::markdownToHTML</code> or the more recent <code>rmarkdown::render</code>.</p></li>
+<li><p>Both options will first use the <code>knitr::knit</code> function to <em>weave</em> the document and generate the markdown <code>md</code> file that includes the code outputs.</p></li>
+<li><p>The generation of the final output will render the final document using <code>markdown::markdownToHTML</code> (in case of <code>knitr::knit2html</code>) or the more recent <code>rmarkdown::render</code>.</p></li>
 </ol>
 <blockquote>
-<p><strong>Exercise:</strong> Experiment with <code>R</code> markdown and the features described so far and generate the <code>Rmd</code> example above. To create your starting document, create a new <code>R Markdown</code> file using the RStudio menu or copy/paste the template below.</p>
+<p><strong>Exercise:</strong> Experiment with <code>R</code> markdown and the features described so far. To create your starting document, create a new <code>R Markdown</code> file using the RStudio menu or copy/paste the template below.</p>
 </blockquote>
 <pre><code>---
 title: &quot;Title comes here&quot;
@@ -173,7 +173,7 @@ chunks within the document. You can embed an `R` code chunk like this:
 <div id="more-markdown-syntax" class="section level2">
 <h2><span class="header-section-number">2.5</span> More markdown syntax</h2>
 <blockquote>
-<p><strong>Exercise:</strong> Experiment with the following syntax using the <code>Rmd</code> created above.</p>
+<p><strong>Exercise:</strong> Experiment with the following syntax using the <code>Rmd</code> file created above.</p>
 </blockquote>
 <div id="emphasis" class="section level3">
 <h3><span class="header-section-number">2.5.1</span> Emphasis</h3>
@@ -315,7 +315,7 @@ dfr</code></pre>
 ## 2    David 234      M
 ## 3 Caroline 321      F
 ## 4     Igor 231      M</code></pre>
-<p>The most recent version of <code>R</code> Markdown also has a table syntax described <a href="http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html#tables">here</a>. Such tables can be generated with the helper function <code>knitr::kable</code> and are then displayed accordingly.</p>
+<p>Tables produced in <code>R</code> as data frames or matrices can be rendered with the helper function <code>knitr::kable</code> and are then displayed accordingly.</p>
 <pre class="r"><code>library(&quot;knitr&quot;)
 kable(dfr)</code></pre>
 <table>

@@ -7,12 +7,101 @@ output:
     css: style.css
 ---
 
-## Variant Calling - SNVs
-
-What are we looking for?
+# Basics of sequencing-based Variant Calling
+## Single Nucleotide Variants (SNVs)
 
 ![SNVsOverview][snvOV]
 
+## Small Insertions and Deletions (InDels)
+
+![InDelOverview][InDelOV]
+
+## The Data (SNV example)
+
+![SNVData][snvData]
+
+## The Data (SNV example) 
+
+Position  |  0 |  1 |  2 |  3 | 4 | 5 |  6 |  7 |  8 |  9 | 10 | 11 |
+---------:| --:| --:| --:| --:|--:|--:| --:| --:| --:| --:| --:| --:|
+A         |  0 |  6 |  0 |  **6** |  0 |  0 |  0 |  0 |  5 |  0 |  0 |  0 |
+C         |  *1* |  0 |  0 |  **4** |  0 |  0 |  0 |  0 |  0 |  4 |  0 |  0 |
+G         |  2 |  0 |  0 |  0 | 10 |  0 |  **8** |  8 |  0 |  0 |  2 |  0 |
+T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
+
+## Certainty and Sequencing Depth
+In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
+
+## Certainty and Sequencing Depth
+```{r,echo = FALSE}
+plot(  seq(0,10)/10, dbinom(x = seq(0,10), size = 10, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 10")
+```
+
+## Certainty and Sequencing Depth
+```{r,echo = FALSE}
+plot(  seq(0,20)/20, dbinom(x = seq(0,20), size = 20, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 20")
+```
+
+## Certainty and Sequencing Depth
+```{r,echo = FALSE}
+plot(  seq(0,50)/50, dbinom(x = seq(0,50), size = 50, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 50")
+```
+
+## Somatic Variants vs. Germline Variants
+
+When dealing with paired cancer samples we ask:
+
+* What are the variants that the person is carrying (germline variants)?
+* What are the variants that the cancer is carrying (somatic variants)?
+* Which somatic variants are causal to the cancer development / progression (driver variants)?
+* Which somatic variants are a byproduct of genomic instability (passenger variants)?
+
+## You've gotten some variants, now what? 
+
+* Visualising them helps to spot weird patterns
+* Annotate them to gain extra information, e.g. population frequencies, SIFT scores, affected genes and type of mutation (missense, nonsense, stop gain, ...)
+
+## Plotting SNVs - Comparative Example
+
+```{r, echo=FALSE, message=FALSE}
+require(h5vc)
+tallyFile <- system.file( "extdata", "example.tally.hfs5", package = "h5vcData" )
+sampleData <- getSampleData( tallyFile, "/ExampleStudy/16" )
+position <- 29983015
+windowsize <- 1000
+vars <- h5dapply( # Calling Variants
+  filename = tallyFile,
+  group = "/ExampleStudy/16",
+  blocksize = 500,
+  FUN = callVariantsPaired,
+  sampledata = sampleData,
+  cl = vcConfParams(returnDataPoints=TRUE),
+  names = c("Coverages", "Counts", "Reference", "Deletions"),
+  range = c(position - windowsize, position + windowsize)
+)
+vars <- do.call( rbind, vars ) # merge the results from all blocks by row
+
+windowsize = 30
+
+data <- h5readBlock(
+  filename = tallyFile,
+  group = "/ExampleStudy/16",
+  names = c("Coverages", "Counts", "Deletions", "Reference"),
+  range = c(position - windowsize, position + windowsize)
+  )
+
+p <- mismatchPlot(
+  data = data,
+  sampledata = sampleData,
+  samples = subset(sampleData, Patient == "Patient5")$Sample,
+  position = position,
+  windowsize = windowsize
+)
+print(p)
+```
+
 [snvOV]: Illustrations/SNVOverview.png "Overview of SNV types"
+[snvData]: Illustrations/SNVdata.png "Overview of WGS/WEX SNV Data"
+[InDelOV]: Illustrations/InDelOverview.png "Overview of InDel types"
 
 

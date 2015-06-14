@@ -1,15 +1,16 @@
 ---
-title: "Monday Lab B.1: Introduction to _Bioconductor_"
+title: "Monday Lab: Introduction to _Bioconductor_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab B.1: Introduction to Bioconductor}
+  % \VignetteIndexEntry{Monday Lab: Introduction to Bioconductor}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
 ```{r style, echo = FALSE, results = 'asis'}
 BiocStyle::markdown()
+options(width=100, max.print=1000)
 ```
 
 ```{r setup, echo=FALSE, messages=FALSE, warnings=FALSE}
@@ -38,22 +39,25 @@ Analysis and comprehension of high-throughput genomic data
     - Microarrays: expression, SNP, ...
     - Flow cytometry, proteomics, images, ...
   
-Packages, vignettes, work flows
+## Packages, vignettes, work flows
 
 ![Alt Sequencing Ecosystem](our_figures/SequencingEcosystem.png)
 
 - 1024 packages
 - Discover and navigate via [biocViews][]
-- Package 'landing page'
+- Package 'landing page', e.g., `r Biocpkg("Gviz")`
     - Title, author / maintainer, short description, citation,
       installation instructions, ..., download statistics
 - All user-visible functions have help pages, most with runnable
   examples
 - 'Vignettes' an important feature in Bioconductor -- narrative
   documents illustrating how to use the package, with integrated code
+    - Example: `AnnotationHub` [landing
+      page](http://bioconductor.org/packages/devel/AnnotationHub)
+      references [HOW-TO vignette]() illustrating some fun use cases.
 - 'Release' (every six months) and 'devel' branches
 
-Objects
+## Objects
 
 - Represent complicated data types
 - Foster interoperability
@@ -65,7 +69,7 @@ Objects
     - `method?"substr,<tab>"` to select help on methods,
       `class?D<tab>` for help on classes
 
-Example
+## Example: _Biostrings_ for DNA sequences
 
 ```{r Biostrings, message=FALSE}
 require(Biostrings)                     # Biological sequences
@@ -75,11 +79,11 @@ m <- consensusMatrix(phiX174Phage)[1:4,] # nucl. x position counts
 polymorphic <- which(colSums(m != 0) > 1)
 m[, polymorphic]
 ```
-```{r showMethods, eval=FALSE}
-methods(class=class(phiX174Phage))
+```{r methods}
+methods(class=class(phiX174Phage))      # 'DNAStringSet' methods
 ```
 
-# Exercises
+## Exercises
 
 1. Load the Biostrings package and phiX174Phage data set. What class
    is phiX174Phage? Find the help page for the class, and identify

@@ -1,0 +1,195 @@
+\documentclass{beamer}
+\usepackage{BioconductorSlides}
+\title{Computing with Sequences and Ranges}
+\author{Martin Morgan 
+  (\href{mailto:mtmorgan@fredhutch.org}{mtmorgan@fredhutch.org}) \\
+  Fred Hutchinson Cancer Research Center \\
+  Seattle, WA, USA
+}
+\date{15 June, 2015}
+
+\begin{document}
+
+<<setup, echo=FALSE>>=
+options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
+@ 
+
+\maketitle
+
+\section{Sequences}
+
+\begin{frame}{Sequences: packages}
+  \begin{description}
+  \item[Biostrings] General purpose biological sequence
+    representation.
+  \item[BSgenome] Whole-genome representation.
+  \item[ShortRead] High-throughput sequening.
+  \end{description}
+\end{frame}
+
+\begin{frame}[fragile]{Sequences: representation}
+  \Rclass{DNAStringSet}: Vector of sequences, e.g., sequence of each
+  exon in the UCSC knownGene track
+\begin{verbatim}
+  A DNAStringSet instance of length 289969
+          width seq
+     [1]    354 CTTGCCGTCAGCCTTT...TCACAACCTAGGCCA
+     [2]    127 GCTCCTGTCTCCCCCC...CCCAGTGTTGCAGAG
+     [3]    109 GTGTGTGGTGATGCCA...CCCAGTGTTGCAGAG
+     ...    ... ...
+[289968]    109 GTGTGTGGTGATGCCA...CCCAGTGTTGCAGAG
+[289969]    354 CTTGCCGTCAGCCTTT...TGACAACCTAGGCCA
+\end{verbatim}
+  \begin{itemize}
+  \item Acts like a \Rclass{vector}, e.g., \Rcode{length()},
+    \Rcode{[}, \Rcode{[[} %]]
+  \item Many methods -- \Rcode{methods(class="DNAStringSet")} -- e.g.,
+    \Rcode{reverseComplement()}, \Rcode{letterFrequency()}, ...
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Sequences: common classes}
+  \begin{description}
+  \item[DNAString] Single DNA sequence, e.g., chromosome
+  \item[DNAStringSet] Vector of DNA seqeucnes.  Actually,
+    \Rcode{XString}, \Rcode{XStringSet}: \Rcode{X} could be DNA, RNA, AA)
+  \item[BSgenome] Collection of (large) DNA sequences
+  \item[ShortReadQ] High-throughput reads \& their qualities
+  \end{description}
+\end{frame}
+
+\begin{frame}{Sequences: file references}
+  \begin{description}
+  \item[TwoBitFile, FaFile] \texttt{.2bit} (in \Biocpkg{rtracklayer})
+    or \texttt{.fa} (in \Biocpkg{Rsamtools}) indexed genome-scale
+    fasta files.
+  \item[FastqFile], e.g., \Rclass{FastqStreamer} (in \Biocpkg{ShortRead})
+  \end{description}
+  \bigskip\par
+  Use -- effectively manage large data
+  \begin{itemize}
+  \item \emph{Restrict} input to specific genomic coordinates
+  \item \emph{Iterate} through large files in chunks
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Sequences: annotations}
+  \Rpackage{BSgenome.*} packages
+  \begin{itemize}
+  \item E.g., \Biocannopkg{BSgenome.Hsapiens.UCSC.hg19}
+  \item Packages containing whole-genome sequences for model
+    organisms
+  \end{itemize}
+  \Biocpkg{AnnotationHub} resources
+  \begin{itemize}
+  \item e.g., Ensembl FASTA files in \Rclass{FaFile} format
+  \end{itemize}
+\end{frame}
+
+\section{Genomic Ranges}
+
+\begin{frame}{Ranges: packages}
+  \begin{description}
+  \item[GenomicRanges] Essential representation and operations
+  \item[GenomicAlignments] Aligned reads as genomic ranges
+  \item[GenomicFeatures] Annotations as genomic ranges
+  \item[rtracklayer] Annotation (e.g., BED, GTF) input
+  \end{description}
+  \medskip\par
+  A little more advanced usage: \Biocpkg{IRanges} ();
+  \Biocpkg{S4Vectors} (underling conceptual ideas)
+\end{frame}
+
+\begin{frame}{Ranges: \Rclass{GRanges} representation}
+  \includegraphics[width=\textwidth, height=!]{our_figures/GRanges}
+  \begin{itemize}
+  \item Data: aligned reads, called peaks, SNP locations, CNVs, \ldots
+  \item Annotation: gene models, variants, regulatory regions, \ldots
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Ranges: \Rclass{GRangesList} representation}
+  \includegraphics[width=\textwidth, height=!]{our_figures/GRangesList}
+\end{frame}
+
+\begin{frame}{Ranges: operations}
+  \includegraphics[width=\textwidth, height=!]{our_figures/RangeOperations}
+  \begin{itemize}
+  \item Many more, e.g., \Rcode{methods(class="GRanges")}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ranges: \Rcode{findOverlaps()}}
+  \begin{itemize}
+  \item Overlaps between \Rcode{query} and \Rcode{subject} genomic ranges
+  \item Different types of overlap, e.g., 'any', 'within', \ldots
+  \end{itemize}
+\begin{verbatim}
+> q <- GRanges("chr1", IRanges(10, 20))
+> s <- GRanges("chr1", IRanges(5, width=c(3, 6, 9)))
+> findOverlaps(q, s)
+Hits object with 2 hits and 0 metadata columns:
+      queryHits subjectHits
+      <integer>   <integer>
+  [1]         1           2
+  [2]         1           3
+  -------
+  queryLength: 1
+  subjectLength: 3
+\end{verbatim}
+  \begin{itemize}  
+  \item \Rclass{Hits} object describing many-to-many relationship
+    between overlapping ranges.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Ranges: working with files}
+  \begin{description}
+  \item[import] (\Biocpkg{rtracklayer}) for BED, GTF, and other common
+    web file import functions. \Rclass{BEDFile}, \Rclass{GTFFile}, etc.
+  \item[readGAlignments / readGAlignmentsList]
+    (\Biocpkg{GenomicAlignments}) for algined reads in BAM files
+  \item[BamFile] (\Biocpkg{Rsamtools}) for lower-level access to BAM
+    files, e.g., iteration
+  \end{description}
+\end{frame}
+
+\begin{frame}{Ranges: annotation}
+  \Rpackage{TxDb.*} packages
+  \begin{itemize}
+  \item E.g., \Biocannopkg{TxDb.Hsapiens.UCSC.hg19.knownGene}
+  \item Genomic ranges for exons, transcripts, coding sequences, and
+    how these are ordered into gene models, e.g., exons grouped by
+    transcript
+  \end{itemize}
+  \Biocpkg{AnnotationHub} resources
+  \begin{itemize}
+  \item Ensembl gene models
+  \item Roadmap Epigenomics regulatory marks
+  \item Many other range-based resources
+  \end{itemize}
+\end{frame}
+
+\section{Demos}
+
+\begin{frame}{Demos}
+  \begin{enumerate}
+  \item Genome sequence and gene model packages
+  \item GC content of exons in UCSC hg19 knownGene track
+  \item liftOver from hg19 to hg38 coordinates
+    %%
+  \item findOverlaps between aligned reads and known genes
+  \item Working with \Rclass{Hits} object
+  \item Genes nearest transcription factor binding sites
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Other resources}
+  \begin{itemize}
+  \item Workflows \& vignettes
+  \item \Biocpkg{GenomicRanges} `cheat sheet'
+  \item Course material
+  \end{itemize}
+\end{frame}
+
+\end{document}

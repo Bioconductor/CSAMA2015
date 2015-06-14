@@ -80,8 +80,7 @@ ggplot(df, aes(x, y)) +
   
 \end{frame}
 
-\begin{frame}{\R: Statistical Computing Environment}
-  Programming concepts
+\begin{frame}{\R: programming concepts}
   \begin{itemize}
   \item Functions -- built-in (e.g., \Rcode{rnorm()}); user-defined
   \item Subsetting -- logical, numeric, character; \Rcode{df[df\$x > 0,]}; 
@@ -91,23 +90,21 @@ ggplot(df, aes(x, y)) +
   \end{itemize}
 \end{frame}
 
-<<symgo-input, echo=FALSE>>=
-fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
-@ 
+%% <<symgo-input, echo=FALSE>>=
+%% fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+%% @ 
 
-\begin{frame}[fragile]{\R: Statistical Computing Environment}
-
-<<symgo1, eval=FALSE>>=
-fl <- file.choose()         # 'symgo.csv' text file
-@ 
-<<symgo>>=
-csv <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
-head(csv, 3)
-genesets <- aggregate(SYMBOL ~ GO, csv, c)
-head(genesets, 3)
-@ 
-
-\end{frame}
+%% \begin{frame}[fragile]{\R: Statistical Computing Environment}
+%% <<symgo1, eval=FALSE>>=
+%% fl <- file.choose()         # 'symgo.csv' text file
+%% @ 
+%% <<symgo>>=
+%% csv <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
+%% head(csv, 3)
+%% genesets <- aggregate(SYMBOL ~ GO, csv, c)
+%% head(genesets, 3)
+%% @ 
+%% \end{frame}
 
 \begin{frame}{\R: help!}
   \begin{itemize}

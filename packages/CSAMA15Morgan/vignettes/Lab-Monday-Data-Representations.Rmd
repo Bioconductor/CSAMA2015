@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab B.2: Data Representations"
+title: "Monday Lab: Data Representations"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab B.2: Data Represenations}
+  % \VignetteIndexEntry{Monday Lab: Data Represenations}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -35,11 +35,13 @@ facilities.
 ## Motivation
 
 Sequence analysis is specialized
+
 - Large data needs to be processed in a memory- and time-efficient manner
 - Specific algorithms have been developed for the unique
   characteristics of sequence data
 
 Additional considerations
+
 - Re-use of existing, tested code is easier to do and less error-prone
   than re-inventing the wheel.
 - Interoperability between packages is easier when the packages share
@@ -66,9 +68,6 @@ There are many interesting operations to be performed on ranges, e.g,
 flank(ir, 3)
 ```
 
-Consult the help page for flank, `?flank`, and explore other
-range-based operations.
-
 The `IRanges` class is part of a class hierarchy. To see this, ask R for
 the class of `ir`, and for the class definition of the `IRanges` class
 ```{r iranges-class}
@@ -86,7 +85,7 @@ there are help pages for several different classes. Tab-complete to
 ```
 
 and verify that you're at the page that describes the method relevant
-to an `IRanges` instance.
+to an `IRanges` instance.  Explore other range-based operations.
 
 The [GenomicRanges][] package extends the notion of ranges to include
 features relevant to application of ranges in sequence analysis,
@@ -109,7 +108,7 @@ flank(gr, 3)
 ```
 
 Discover what classes `GRanges` extends, find the help page
-documenting the behavior of `flank` when applied to a GRanges object,
+documenting the behavior of `flank` when applied to a `GRanges` object,
 and verify that the help page documents the behavior we just observed.
 ```{r granges-class}
 class(gr)
@@ -362,7 +361,7 @@ IRangesList, GRangesList
         grl <- GRangesList(...)
         orig_gr <- unlist(grl)
         transformed_gr <- FUN(orig)
-        transformed_grl <- relist(, grl)
+        transformed_grl <- relist(transformed_gr, grl)
         
 Reference
 

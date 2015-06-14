@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab, part A: Introduction to _R_"
+title: "Monday Lab: Introduction to _R_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab, part A: Introduction to R}
+  % \VignetteIndexEntry{Monday Lab: Introduction to R}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -25,7 +25,7 @@ Back: [Monday labs](Lab-Monday-Introduction.html)
 
 # R
 
-Language and environment for statistical computing and graphics
+## Language and environment for statistical computing and graphics
 
 - Full-featured programming language
 - Interactive and *interpretted* -- convenient and forgiving
@@ -33,7 +33,7 @@ Language and environment for statistical computing and graphics
 - Statistical, e.g. `factor()`, `NA`
 - Extensible -- CRAN, Bioconductor, github, ...
 
-Vector, class, object
+## Vector, class, object
 
 - Efficient _vectorized_ calculations on 'atomic' vectors `logical`,
   `integer`, `numeric`, `complex`, `character`, `byte`
@@ -43,18 +43,92 @@ Vector, class, object
 - Formal _classes_ represent complicated combinations of vectors,
   e.g., the return value of `lm()`, below
 
-Function, generic, method
+## Function, generic, method
 
 - Functions transform inputs to outputs, perhaps with side effects,
   e.g., `rnorm(1000)`
   - Argument matching first by name, then by position
   - Functions may define (some) arguments to have default values
 - _Generic_ functions dispatch to specific _methods_ based on class of
-  argument(s), e.g., `print()`. 
+  argument(s), e.g., `print()`.
 - Methods are functions that implement specific generics, e.g.,
   `print.factor`; methods are invoked _indirectly_, via the generic.
 - Many but not all functions able to manipulate a particular class are
   methods, e.g., `abline()` used below is a plain-old-funciton.
+
+## Programming
+
+- Iteration:
+
+  - `lapply()`
+
+    ```{r lapply-args}
+    args(lapply)
+    ```
+
+     - Meaning: for a vector `X` (typically a `list()`), apply a
+       function `FUN` to each vector element, returning the result as
+       a **l**ist. `...` are additional arguments to `FUN`.
+     - `FUN` can be built-in, or a user-defined function
+
+    ```{r lapply-eg}
+    lst <- list(a=1:2, b=2:4)
+    lapply(lst, log)      # 'base' argument default; natural log
+    lapply(lst, log, 10)  # '10' is second argument to 'log()', i.e., log base 10
+    ```
+
+     - `sapply()` -- like `lapply()`, but simplify the result to a
+       vector, matrix, or array, if possible.
+     - `vapply()` -- like `sapply()`, but requires that the return
+       type of `FUN` is specified; this can be safer -- an error when
+       the result is of an unexpected type.
+
+  - `mapply()` (also `Map()`)
+
+    ```{r}
+    args(mapply)
+    ```
+
+    - `...` are one or more vectors, recycled to be of the same
+      length. `FUN` is a function that takes as many arguments as
+      there are components of `...`. `mapply` returns the result of
+      applying `FUN` to the elements of the vectors in `...`.
+
+    ```{r mapply-eg}
+    mapply(seq, 1:3, 4:6, SIMPLIFY=FALSE) # seq(1, 4); seq(2, 5); seq(3, 6)
+    ```
+
+    - `apply()`
+
+    ```{r apply}
+    args(apply)
+    ```
+
+    - For a matrix or array `X`, apply `FUN` to each `MARGIN`
+      (dimension, e.g., `MARGIN=1` means apply `FUN` to each row,
+      `MARGIN=2` means apply `FUN` to each column)
+
+  - `repeat {}`, `for () {}`
+
+    - Traditional programming constructs, almost always less
+      error-prone, more efficient, and more expressive to use
+      `lapply()`.
+
+- Conditional: `if () {} else {}`
+- Functions (see table below for a few favorites)
+
+  - Easy to define your own functions
+
+    ```{r myfun}
+    fun <- function(x) {
+        length(unique(x))
+    }
+    ## list of length 5, each containsing a sample (with replacement) of letters
+    lets <- replicate(5, sample(letters, 50, TRUE), simplify=FALSE)
+    sapply(lets, fun)
+    ```
+
+## Introspection & Help
 
 Introspection
 
@@ -63,11 +137,15 @@ Introspection
 
 Help
 
-- `?print`: help on the generic print 
-- `?print.data.frame`: help on print method for objects of class
+- `?"print"`: help on the generic print
+- `?"print.data.frame"`: help on print method for objects of class
     data.frame.
+- `help(package="GenomeInfoDb")`
+- `browseVignettes("GenomicRanges")`
+- `methods("plot")`
+- `methods(class="lm")`
 
-Example
+## Examples
 
 ```{r}
 x <- rnorm(1000)                   # atomic vectors
@@ -80,17 +158,6 @@ anova(fit)
 plot(y ~ x, df)
 abline(fit, col="red", lwd=3, lty=2) # a function, not generic.method
 ```
-
-Programming
-
-- Iteration:
-  - `lapply()`, `sapply()`, `vapply()`
-  - `mapply()`
-  - `apply()`
-  - `repeat {}`, `for () {}`
-- Conditional: `if () {} else {}`
-- Functions (see table below for a few favorites)
-- Your own functions `fun <- function() {}`
 
 Programming example -- group 1000 SYMBOLs into GO identifiers
 
@@ -266,7 +333,7 @@ brfss <- read.csv(fname)
 
 2. Use `aggregate()` to summarize the average weight in each sex and
    year.
-  
+
 3. Create a scatterplot showing the relationship between the square
    root of weight and height, using the `plot()` function and the
    `main` argument to annotate the plot. Note the transformed
@@ -276,7 +343,7 @@ brfss <- read.csv(fname)
      ```{r brfss-simple-plot}
      plot(sqrt(Weight) ~ Height, brfss, main="All Years, Both Sexes")
      ```
-     
+
 4. Color the female and male points differently. To do this, use the
    `col` argument to `plot()`. Provide as a value to that argument a
    vector of colors, subset by `brfss$Sex`.
@@ -287,7 +354,7 @@ brfss <- read.csv(fname)
      ```{r brfss-subset}
      brfss2010 <- brfss[brfss$Year == "2010", ]
      ```
-  
+
 6. Create the figure below (two panels in a single figure). Do this by
    using the `par()` function with the `mfcol` argument before calling
    `plot()`. You'll need to create two more subsets of data, perhaps
@@ -301,7 +368,7 @@ brfss <- read.csv(fname)
           main="2010, Male")
      par(mfcol=c(1, 1))
      ```
-  
+
 7. Plotting large numbers of points means that they are often
    over-plotted, potentially obscuring important patterns. Experiment
    with arguments to `plot()` to address over-plotting, e.g.,
@@ -338,13 +405,13 @@ and can be a very effective visualization tool.
    arguments, see the help pages `?xyplot` (for overall structure of
    the plot) and `?panel.xyplot` (for how each 'panel' of data is
    plotted).
-  
+
 4. Create the following figure. Use the `densityplot()` function with
    the formula `~ sqrt(Weight)`. The `group=Sex` function argument
    creates separate lines for each sex. Be sure to use
    `plot.points=FALSE` to avoid a `rug' of points at the base of the
    figure. Can you add a key (legend)?
-   
+
    ```{r lattice-density}
    densityplot(~sqrt(Weight), brfss2010, group=Sex, plot.points=FALSE)
    ```
@@ -355,7 +422,7 @@ and can be a very effective visualization tool.
     ```{r lattice-bwplot}
     bwplot(sqrt(Weight) ~ factor(Year) | Sex, brfss)
     ```
-  
+
 6.  Create the Figure below, a _violin_ plot, using `bwplot()` and the
     `panel` argument set to `panel.violin`. from `?bwplot` we learn
     that `panel` is a function that determines how each panel is
@@ -374,7 +441,7 @@ and can be a very effective visualization tool.
     xyplot(sqrt(Weight) ~ Height|Sex, brfss2010,
         panel = function(x, y, ...) {
             panel.xyplot(x, y, ...)
-            panel.points(median(x, na.rm=TRUE), median(y, na.rm=TRUE), 
+            panel.points(median(x, na.rm=TRUE), median(y, na.rm=TRUE),
                 cex=2, pch=20, col="red")
         },
         type=c("p", "g", "r"), lwd=2, col.line="red", xlim=c(120, 210))

@@ -1,28 +1,53 @@
-Gene set correlations
+Gene set testing and correlations
 ========================================================
 author: Michael Love
 date: June 8, 2015
+transition: linear
 autosize: false
-width: 1600
+width: 1000
 
-Gene set with correlation
+Gene set tests with correlation
 ===
+incremental: true
 
-From [PH525x notes](http://genomicsclass.github.io/book/pages/gene_set_analysis.html):
+(from [PH525x notes](http://genomicsclass.github.io/book/pages/gene_set_analysis.html)
+and [Barry, Nobel and Wright, 2008](http://arxiv.org/abs/0803.3881))
+
+Consider the average *t*-statistic from $N$ genes in a set $G$:
 
 $$ \bar{t}=\frac{1}{N} \sum_{i \in G} t_i $$
 
-Under the null hypothesis, these $t$ have mean 0. If the t-statistics are independent of each other then $\sqrt{N} \bar{t}$ has standard deviation 1 and is approximately normal:
+This statistic $\bar{t}$ combines the information about DE
+from the set and might be a useful test statistic.
+
+Gene set tests with correlation
+===
+incremental: true
+
+Under the null hypothesis, the $t$ have mean 0. If the $t$ are independent then $\sqrt{N} \bar{t}$ has standard deviation 1 and is approximately normal:
 
 $$ \sqrt{N} \bar{t} \sim N(0,1) $$
 
 This comes from the following decomposition of the variance:
 
-$$ \text{Var}(\bar{t})= \frac{1}{N^2} \text{Var}(t_1 + \dots + t_N) = \frac{1}{N^2}(\text{Var}(t_1)+\dots+\text{Var}(t_N)) = \frac{1}{N} $$
+$$ \begin{eqnarray}
+\text{Var}(\bar{t}) &=& \frac{1}{N^2} \text{Var}(t_1 + \dots + t_N) \\
+&=& \frac{1}{N^2}( \text{Var}(t_1) + \dots + \text{Var}(t_N) ) \\
+&=& \frac{1}{N}
+\end{eqnarray} $$
+
+Gene set tests with correlation
+===
+
+Now consider the case that the test statistics $t_i$ in a gene set are not independent but have correlation $\rho$ *under the null hypothesis*.
+
+$$ \bar{t}=\frac{1}{N} \sum_{i \in G} t_i $$
+
+$$ \text{corr}(t_i, t_{i'}) = \rho, \quad i, i' \in G $$
 
 ===
 
-Note that in the case that genes in a gene set have correlation $\rho$ the variance is of the average t-statistics can be computed to be:
+The variance of the average *t*-statistics will be:
 
 $$ \begin{eqnarray} \text{Var}(\bar{t}) &=& \frac{1}{N^2} \text{Var}( (1 \dots 1) (t_1 \dots t_N)' ) \\ 
 &=& \frac{1}{N^2}(1 \dots 1) 
@@ -35,28 +60,66 @@ $$ \begin{eqnarray} \text{Var}(\bar{t}) &=& \frac{1}{N^2} \text{Var}( (1 \dots 1
 &=& \frac{1}{N^2}\{N + (N-1) N \rho \} \\
 &=& \frac{1}{N}\{1 + (N-1) \rho \} \end{eqnarray} $$
 
-So the variance inflation factor (VIF) is:
-
-$$ VIF = 1 + (N-1) \rho $$
-
+Variance inflation with correlation
 ===
+incremental: true
+
+So the variance inflation factor (VIF) comparing the independent case to the case with correlation is:
+
+$$ VIF = 1 + (N-1) \bar{\rho} $$
+
+So the increased width (standard deviation) of the null distribution for a gene set with 20 genes and average correlation 0.1 will be:
 
 ```{r}
+sqrt(1 + 19 * 0.1)
+```
+
+This VIF is approximately true also for testing the set statistics against the complement: the genes not in the set (see Barry, Nobel and Wright 2008).
+
+Test statistic vs expression correlations
+===
+
+Here, the expression of 5 samples vs 5 samples, no true difference but a correlation of gene expression.
+
+<center>
+```{r echo=FALSE, results='hide'}
+library(rafalib)
+mypar()
 library(mvtnorm)
-rho <- .5
+rho <- .2
 sigma <- matrix(rho, ncol=2, nrow=2)
 diag(sigma) <- 1
 nrep <- 10000
 x <- rmvnorm(nrep, mean=rep(0,2), sigma=sigma)
 cor(x[,1], x[,2])
-plot(x, cex=.1, asp=1, xlab="gene 1", ylab="gene 2", main=paste("multivariate normal dist. w/ corr =",rho))
+plot(x, cex=.1, asp=1, xlab="gene 1", ylab="gene 2", main=paste("Normal distribution with corr =",rho), col="grey")
 points(x[1:10,], cex=1.5, pch=16, col = rep(c("red","dodgerblue"),each=5))
 ```
+</center>
 
+Test statistic vs expression correlations
 ===
 
-```{r}
-nrep <- 100000
+If the test statistic $T$ is a linear form of the data $X$ (e.g. log fold change), then:
+
+$$\rho^T_{i,i'} = \rho^X_{i,i'}$$
+
+For t-test, the relationship is monotone, approximately linear and: 
+
+$$\rho^T_{i,i'} \approx \rho^X_{i,i'} $$
+
+(Barry, Nobel and Wright, 2008)
+
+Simulate expression correlation of 0.2
+===
+
+<center>
+```{r echo=FALSE, results='hide'}
+mypar()
+nrep <- 100000 
+rho <- .2
+sigma <- matrix(rho, ncol=2, nrow=2)
+diag(sigma) <- 1
 x <- rmvnorm(nrep, mean=rep(0,2), sigma=sigma)
 n <- 10
 y1 <- matrix(x[,1], ncol=n, nrow=nrep/n, byrow=TRUE)
@@ -65,56 +128,105 @@ f <- factor(rep(1:2, each=5))
 library(genefilter)
 t1 <- rowttests(y1, f, tstatOnly = TRUE)
 t2 <- rowttests(y2, f, tstatOnly = TRUE)
-plot(t1$statistic, t2$statistic, cex=.1, asp=1, xlab="t-stat gene 1", ylab="t-stat gene 2", main="simulate correlated data")
-legend("top", paste("sample corr =", round(cor(t1$statistic, t2$statistic),2)))
+cor(t1,t2)
+plot(t1$statistic, t2$statistic, cex=.1, asp=1, xlab="t-stat gene 1", ylab="t-stat gene 2")
+legend("top", paste("est. t corr =", round(cor(t1$statistic, t2$statistic),2)), cex=2)
 ```
-
-===
-
-```{r}
-# now let N be the number of genes in a gene set
-N <- 8
-sigma <- matrix(rho, ncol=N, nrow=N)
-diag(sigma) <- 1
-n <- 10 # let n be the number of samples
-t <- rmvt(n=10000, sigma=sigma, df=n-1)
-```
-
-===
-
-```{r}
-t.star <- sqrt(N) * rowMeans(t)
-VINF <- 1 + (N - 1) * rho
-```
-
-<center>
-
-```{r, echo=FALSE, out.width="800px"}
-hist(t.star,breaks=200,col="grey",border="white",freq=FALSE,ylim=c(0,.5),xlim=c(-5,5))
-s <- seq(from=-5,to=5,length=100)
-lines(s, dnorm(s),col="magenta",lwd=3)
-lines(s, dnorm(s,0,sqrt(VINF)),col="dodgerblue",lwd=3)
-legend("topright", c("N(0,1)","N(0,VINF)"), col=c("magenta","dodgerblue"), lwd=3, cex=1.25)
-```
-
 </center>
 
 ===
 
-Then how many gene sets will fall out of the Q quantile of the normal density?
+<center>
+```{r echo=FALSE}
+mypar()
+# now let N be the number of genes in a gene set
+N <- 20
+rho <- 0.2
+sigma <- matrix(rho, ncol=N, nrow=N)
+diag(sigma) <- 1
+n <- 10 # let n be the number of samples
+t <- rmvt(n=10000, sigma=sigma, df=n-1)
+t.star <- sqrt(N) * rowMeans(t)
+VINF <- 1 + (N - 1) * rho
+hist(t.star,breaks=200,col="grey",border="white",freq=FALSE,
+     ylim=c(0,.5),xlim=c(-6,6),
+     main="Gene set of size 20, corr. 0.2",
+     xlab="t-statistics")
+s <- seq(from=-6,to=6,length=100)
+lines(s, dnorm(s),col="magenta",lwd=3)
+lines(s, dnorm(s,0,sqrt(VINF)),col="dodgerblue",lwd=3)
+legend("topright", c("N(0,1)","N(0,VINF)"), col=c("magenta","dodgerblue"), lwd=3, cex=1.25)
+```
+</center>
 
+`r round(mean(abs(t.star) > qnorm(.995)) * 100)`% of the simulated t-statistics are outside of the center 99% of the $N(0,1)$ distribution.
+
+Whence correlations?
+===
+incremental: true
+
+Where do expression correlations *under the null* come from? My guesses in order of importance:
+
+* uncorrected batch effects
+* large scale amplifications in cancer
+* gene regulatory networks
+
+
+CAMERA (Wu and Smyth 2012)
 ===
 
-Where do null gene-gene correlations come from?
+for **C**orrelation **A**djusted **ME**an **RA**nk gene set test, available in the limma package.
 
-CAMERA
-===
+* estimating the inter-gene correlation from the data 
+* using it to adjust the gene set test statistic
+* suitable for any experiment that can be represented by genewise linear models
 
 Permutations
 ===
 
+Assume the null: no differences across condition, although
+gene-gene correlation are present
+
+<center>
+```{r, echo=FALSE}
+x1 <- rep(1:3,2)
+x2 <- rep(4:6,2)
+f <- rep(1:2, each=3)
+par(mfrow=c(2,1), mar=c(2,5,2,2))
+barplot(x1, col=f, ylim=c(0,6), ylab="gene 1")
+barplot(x2, col=f, ylab="gene 2")
+```
+</center>
+
+Permutations
+===
+
+Assume the null: no differences across condition, although
+gene-gene correlation are present
+
+<center>
+```{r, echo=FALSE}
+idx <- c(1,5,2,3,4,6)
+x1 <- rep(1:3,2)
+x2 <- rep(4:6,2)
+f <- rep(1:2, each=3)
+par(mfrow=c(2,1), mar=c(2,5,2,2))
+barplot(x1[idx], col=f[idx], ylim=c(0,6), ylab="gene 1")
+barplot(x2[idx], col=f[idx], ylab="gene 2")
+```
+</center>
+
+Permutations
+===
+
+Has limitations:
+
+* only if samples are exchangeable (no batch effects)
+* not easy to implement for complex designs (although see [samr](http://cran.r-project.org/web/packages/samr/index.html) for strategies)
+* requires sufficient samples for small p-values (although see [Larsen and Owen](http://arxiv.org/abs/1405.1383) for moment-based trick)
+
 Rotations
 ===
 
-* picture of rotations of residuals
+* diagram of rotations of residuals for 2 group comparison with batch
 

@@ -3,8 +3,16 @@ title: "Interactive data visualization using Shiny"
 author: "Andrzej Oleś"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: ioslides_presentation
+css: style.css
 runtime: shiny
 ---
+
+```{r echo=FALSE}
+temporal <- function(expr, ms=1000, domain=getDefaultReactiveDomain()) {
+  invalidateLater(ms, domain)
+  expr
+}
+```
 
 ## What is Shiny?
 
@@ -39,16 +47,77 @@ renderPlot({
 })
 ```
 
-## Slide with Bullets
+## <!--Reactive tables and data frames-->
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+```{r, echo = FALSE}
+shinyAppDir(
+  system.file("examples/03_reactivity", package="shiny"),
+  options=list(
+    width="100%", height="600px"
+  )
+)
+```
+
+## <!--Help text and submit buttons-->
+
+```{r, echo = FALSE}
+shinyAppDir(
+  system.file("examples/07_widgets", package="shiny")
+)
+```
+
+## <!--Tabbed panels-->
+
+```{r, echo = FALSE}
+shinyAppDir(
+  system.file("examples/06_tabsets", package="shiny")
+)
+```
+
+## <!--File download-->
+
+```{r, echo = FALSE}
+shinyAppDir(
+  system.file("examples/10_download", package="shiny")
+)
+```
+
+## <!--File upload-->
+
+```{r, echo = FALSE}
+shinyAppDir(
+  system.file("examples/09_upload", package="shiny")
+)
+```
+
+## Reactive programming
+
+A way of building programs for **values that change over time**
+
+- The value of a specific variable
+- The current date/time: `r renderText(temporal(format(Sys.time())))`
+- The contents of a specific file on disk
+- But most commonly, user inputs:
+```{r}
+numericInput('x', 'Please enter a number', 5)
+```
+
+(The value of `x` is now `r renderText(input$x)`.)
+
+<!--
+## Shiny widgets
+
+Shiny widgets gallery
 
 ## Slide with R Code and Output
 
 ```{r}
 summary(cars)
 ```
-
-
+-->
+## <!--Interactive MA plot-->
+<!--
+```{r, echo = FALSE}
+shinyAppDir("plotMA")
+```
+-->

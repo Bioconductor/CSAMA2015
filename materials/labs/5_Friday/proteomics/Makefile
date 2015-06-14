@@ -1,5 +1,6 @@
 proteomics.pdf: proteomics.Rmd
 	Rscript -e 'rmarkdown::render("proteomics.Rmd", output_format="all")'
+	Rscript -e 'knitr::purl("proteomics.Rmd")'
 
 clean:
 	rm -f erwinia_carotovora.fasta

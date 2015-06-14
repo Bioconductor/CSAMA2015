@@ -47,6 +47,16 @@ renderPlot({
 })
 ```
 
+## Shiny widgets
+
+Shiny widgets gallery
+
+
+
+```{r, echo = FALSE}
+
+```
+
 ## <!--Reactive tables and data frames-->
 
 ```{r, echo = FALSE}
@@ -105,19 +115,16 @@ numericInput('x', 'Please enter a number', 5)
 (The value of `x` is now `r renderText(input$x)`.)
 
 <!--
-## Shiny widgets
-
-Shiny widgets gallery
 
 ## Slide with R Code and Output
 
 ```{r}
 summary(cars)
 ```
--->
+
 ## <!--Interactive MA plot-->
-<!--
+
 ```{r, echo = FALSE}
-shinyAppDir("plotMA")
+shinyAppDir("/home/oles/teaching/CSAMA2015/materials/lectures/4_Thursday/Interactive_data_visualization_using_Shiny/plotMA")
 ```
 -->

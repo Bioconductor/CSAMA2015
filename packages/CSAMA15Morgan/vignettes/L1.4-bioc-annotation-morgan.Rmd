@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab: Annotation Resources"
+title: "Lab 1.4: Annotation Resources"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab: Annotation Resources}
+  % \VignetteIndexEntry{Lab 1.4: Annotation Resources}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -32,7 +32,7 @@ Authors: Martin Morgan (<a
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back: [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](L1.0-lab-intro-morgan.html)
 
 # Gene annotation
 
@@ -74,7 +74,33 @@ for retrieving annotations are summarized in the table.
 |            | `transcriptsBy()` , `exonsBy()`       | Features group by  gene, transcript, etc., as `GRangesList`.     |
 |            | `cdsBy()`                             |                                                                  |
 
-### Exercise
+## Internet resources
+
+A short summary of select Bioconductor packages enabling web-based
+queries is in following Table.
+
+| Package                                             | Description                               |
+|-----------------------------------------------------|-------------------------------------------|
+| [AnnotationHub][]                                   | Ensembl, Encode, dbSNP, UCSC data objects |
+| [biomaRt](http://biomart.org)                       | Ensembl and other annotations             |
+| [PSICQUIC](https://code.google.com/p/psicquic)      | Protein interactions                      |
+| [uniprot.ws](http://uniprot.org)                    | Protein annotations                       |
+| [KEGGREST](http://www.genome.jp/kegg)               | KEGG pathways                             |
+| [SRAdb](http://www.ncbi.nlm.nih.gov/sra)            | Sequencing experiments.                   |
+| [rtracklayer](http://genome.ucsc.edu)               | genome tracks.                            |
+| [GEOquery](http://www.ncbi.nlm.nih.gov/geo/)        | Array and other data                      |
+| [ArrayExpress](http://www.ebi.ac.uk/arrayexpress/)  | Array and other data                      |
+
+*Using biomaRt*
+
+The [biomaRt][] package offers access to the online
+[biomart](http://www.biomart.org) resource. this consists of several
+data base resources, referred to as 'marts'.  Each mart allows access
+to multiple data sets; the [biomaRt][] package provides methods for
+mart and data set discovery, and a standard method `getBM()` to
+retrieve data.
+
+## Exercises
 
 **Exercise**: This exercise illustrates basic use of the `select'
 interface to annotation packages.
@@ -102,37 +128,9 @@ cols <- c("SYMBOL", "GENENAME")
 select(org.Hs.eg.db, keys=ensids, columns=cols, keytype="ENSEMBL")
 ```
 
-## Internet resources
-
-A short summary of select Bioconductor packages enabling web-based
-queries is in following Table.
-
-| Package                                             | Description                               |
-|-----------------------------------------------------|-------------------------------------------|
-| [AnnotationHub][]                                   | Ensembl, Encode, dbSNP, UCSC data objects |
-| [biomaRt](http://biomart.org)                       | Ensembl and other annotations             |
-| [PSICQUIC](https://code.google.com/p/psicquic)      | Protein interactions                      |
-| [uniprot.ws](http://uniprot.org)                    | Protein annotations                       |
-| [KEGGREST](http://www.genome.jp/kegg)               | KEGG pathways                             |
-| [SRAdb](http://www.ncbi.nlm.nih.gov/sra)            | Sequencing experiments.                   |
-| [rtracklayer](http://genome.ucsc.edu)               | genome tracks.                            |
-| [GEOquery](http://www.ncbi.nlm.nih.gov/geo/)        | Array and other data                      |
-| [ArrayExpress](http://www.ebi.ac.uk/arrayexpress/)  | Array and other data                      |
-
-*Using biomaRt*
-
-The [biomaRt][] package offers access to the online
-[biomart](http://www.biomart.org) resource. this consists of several
-data base resources, referred to as 'marts'.  Each mart allows access
-to multiple data sets; the [biomaRt][] package provides methods for
-mart and data set discovery, and a standard method `getBM()` to
-retrieve data.
-
-### Exercise
+**Exercise**
 
 <font color="red">Internet access required for this exercise</font>
-
-*Exercise*
 
 1. Load the [biomaRt][] package and list the available marts.  Choose
    the *ensembl* mart and list the datasets for that mart.  Set up a
@@ -144,7 +142,7 @@ retrieve data.
    discover values for these arguments.  Call `getBM()` using filters
    and attributes of your choosing.
 
-*Solution*
+**Solution**
 ```{r biomaRt1, eval=FALSE, results="hide"}
 ## NEEDS INTERNET ACCESS !!
 library(biomaRt)
@@ -165,16 +163,14 @@ res <- getBM(attributes =  myAttributes, filters =  myFilter,
              values =  myValues, mart = ensembl)
 ```
 
-### Exercise
+**Exercise**
 
-*Exercise*
-
-As an optional exercise, annotate the genes that are differentially
-expressed in the DESeq2 laboratory, e.g., find the \texttt{GENENAME}
-associated with the five most differentially expressed genes. Do these
-make biological sense? Can you `merge()` the annotation results with
-the `top table' results to provide a statistically and biologically
-informative summary?
+As an optional exercise to be completed after Tuesday's lab, annotate
+the genes that are differentially expressed in the DESeq2 laboratory,
+e.g., find the *GENENAME* associated with the five most differentially
+expressed genes. Do these make biological sense? Can you `merge()` the
+annotation results with the `top table' results to provide a
+statistically and biologically informative summary?
 
 # Genome annotation
 
@@ -183,12 +179,12 @@ representing large genomes. Several include:
 
 - 'TxDb.*' For transcript and other genome / coordinate annotation.
 - [BSgenome][] For whole-genome representation. See
-  `available.packages()` for pre-packaged genomes, and the vignette
+  `available.genomes()` for pre-packaged genomes, and the vignette
   'How to forge a BSgenome data package' in the
 - [Homo.sapiens][] For integrating 'TxDb*' and 'org.*' packages.
 - 'SNPlocs.*' For model organism SNP locations derived from dbSNP.
 - `FaFile()` ([Rsamtools][]) for accessing indexed FASTA files.
-- 'SIFT.*', 'PolyPhen', 'ensemblVEP' Variant effect scores.
+- [ensemblVEP][] Variant effect scores.
 
 ## Transcript annotation packages
 
@@ -202,9 +198,16 @@ counting aligned reads in RNA-seq experiments and retrieving DNA
 sequences underlying regions of interest in ChIP-seq analysis, e.g.,
 for motif characterization.
 
-### Exercise
+## _rtracklayer_
 
-*Exercise*
+The [rtracklayer][] package allows us to query the UCSC genome
+browser, as well as providing `import()` and `export()` functions for
+common annotation file formats like GFF, GTF, and BED. The exercise
+below illustrates some of the functionality of [rtracklayer][].
+
+## Exercises
+
+**Exercise**
 
 This exercise uses annotation resources to go from a gene symbol
 'BRCA1' through to the genomic coordinates of each transcript
@@ -232,7 +235,7 @@ transcripts.
    this case).
 
 4. Visualize the transcripts in genomic coordinates using the [Gviz][]
-   package to construct an `AnnotationTrack`, and plotting it using
+   package to construct a `GeneRegionTrack`, and plotting it using
    `plotTracks()`.
 
 5. Use the [Bsgenome.Hsapiens.UCSC.hg19][] package and
@@ -240,7 +243,7 @@ transcripts.
    each transcript.
 
 
-*Solution*
+**Solution**
 
 Retrieve the Entrez identifier corresponding to the BRCA1 gene symbol
 
@@ -275,9 +278,11 @@ Visualize the BRCA1 transcirpts using [Gviz][] (this package has an
 excellent vignette, `vignette("Gviz")`)
 
 ```{r Gviz, message=FALSE}
-require(Gviz)
-anno <- AnnotationTrack(brca1cds)
-plotTracks(list(GenomeAxisTrack(), anno))
+library(Gviz)
+grt <- GeneRegionTrack(txdb)
+plotTracks(list(GenomeAxisTrack(), grt), chromosome="chr17",
+    from=min(start(unlist(brca1cds))),
+    to=max(end(unlist(brca1cds))))
 ```
 
 Extract the coding sequences of each transcript
@@ -310,34 +315,27 @@ names(seq)
 seq[["uc010whl.2"]]                     # 21 introns
 ```
 
-## _rtracklayer_
+**Exercise**
 
-The [rtracklayer][] package allows us to query the UCSC genome
-browser, as well as providing `import()` and
-`export()` functions for common annotation file formats like
-GFF, GTF, and BED.
+<font color="red">Internet access required for this exercise</font>
 
-### Exercise
-
-*Exercise*
-
-Here we use [rtracklayer][] to retrieve estrogen receptor
-binding sites identified across cell lines in the ENCODE project. We
-  focus on binding sites in the vicinity of a particularly interesting
-  region of interest.
+Here we use [rtracklayer][] to retrieve estrogen receptor binding
+sites identified across cell lines in the ENCODE project. We focus on
+binding sites in the vicinity of a particularly interesting region of
+interest.
 
 1. Define our region of interest by creating a `GRanges` instance with
    appropriate genomic coordinates. Our region corresponds to 10Mb up-
    and down-stream of a particular gene.
 2. Create a session for the UCSC genome browser
 3. Query the UCSC genome browser for ENCODE estrogen receptor
-   ERalpha$_a$ transcription marks; identifying the appropriate track,
-   table, and transcription factor requires biological knowledge and
-   detective work.
+   ERalpha<sub>a</sub> transcription marks; identifying the
+   appropriate track, table, and transcription factor requires
+   biological knowledge and detective work.
 4. Visualize the location of the binding sites and their scores;
    annotate the mid-point of the region of interest.
 
-*Solution*
+**Solution**
 
 Define the region of interest
 
@@ -372,10 +370,30 @@ abline(v=start(roi) + (end(roi) - start(roi) + 1) / 2, col="blue")
 ``` 
 # AnnotationHub
 
+[AnnotationHub][] is a data base of large-scale whole-genome
+resources, e.g., regulatory elements from the Roadmap Epigenomics
+project, Ensembl GTF and FASTA files for model and other organisms,
+and the NHLBI [grasp2db][] data base of GWAS results. There are many interesting ways in which these resources can be used. Examples include
+
+- Easily access and import Roadmap Epigenomics files.
+- 'liftOver' genomic range-based annotations from one coordinate
+  system (e.g, hg19) to another (e.g., GRCh 38);
+- Create TranscriptDb and BSgenome-style annotation resources 'on the
+  fly' for a diverse set of organisms.
+- Programmatically access the genomic coordiantes of clinically
+  relevant variants cataloged in dbSNP.
+  
+Unfortunately, [AnnotationHub][] makes extensive use of internet
+resources and so we will not pursue it in this course; see the
+vignettes that come with the pacakge, for instance
+[_AnnotationHub_ HOW-TOs](http://bioconductor.org/packages/devel/bioc/vignettes/AnnotationHub/inst/doc/AnnotationHub-HOWTO.html).
+
+
 [AnnotationDbi]: http://bioconductor.org/packages/AnnotationDbi
 [AnnotationHub]: http://bioconductor.org/packages/AnnotationHub
 [BSgenome]: http://bioconductor.org/packages/release/BSgenome
 [Bsgenome.Hsapiens.UCSC.hg19]: http://bioconductor.org/packages/Bsgenome.Hsapiens.UCSC.hg19
+[grasp2db]: http://bioconductor.org/packages/release/grasp2db
 [Gviz]: http://bioconductor.org/packages/release/Gviz
 [Homo.sapiens]: http://bioconductor.org/packages/release/Homo.sapiens
 [Rsamtools]: http://bioconductor.org/packages/Rsamtools

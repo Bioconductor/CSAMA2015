@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab: Introduction to _R_"
+title: "Lab 1.1: Introduction to _R_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab: Introduction to R}
+  % \VignetteIndexEntry{Lab 1.1: Introduction to R}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -21,7 +21,7 @@ Authors: Martin Morgan (<a
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back: [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](L1.0-lab-intro-morgan.html)
 
 # R
 
@@ -58,18 +58,18 @@ Back: [Monday labs](Lab-Monday-Introduction.html)
 
 ## Programming
 
-- Iteration:
+Iteration:
 
-  - `lapply()`
+- `lapply()`
 
     ```{r lapply-args}
     args(lapply)
     ```
 
-     - Meaning: for a vector `X` (typically a `list()`), apply a
-       function `FUN` to each vector element, returning the result as
-       a **l**ist. `...` are additional arguments to `FUN`.
-     - `FUN` can be built-in, or a user-defined function
+   - Meaning: for a vector `X` (typically a `list()`), apply a
+     function `FUN` to each vector element, returning the result as
+     a **l**ist. `...` are additional arguments to `FUN`.
+   - `FUN` can be built-in, or a user-defined function
 
     ```{r lapply-eg}
     lst <- list(a=1:2, b=2:4)
@@ -77,56 +77,64 @@ Back: [Monday labs](Lab-Monday-Introduction.html)
     lapply(lst, log, 10)  # '10' is second argument to 'log()', i.e., log base 10
     ```
 
-     - `sapply()` -- like `lapply()`, but simplify the result to a
-       vector, matrix, or array, if possible.
-     - `vapply()` -- like `sapply()`, but requires that the return
-       type of `FUN` is specified; this can be safer -- an error when
-       the result is of an unexpected type.
+   - `sapply()` -- like `lapply()`, but simplify the result to a
+     vector, matrix, or array, if possible.
+   - `vapply()` -- like `sapply()`, but requires that the return
+     type of `FUN` is specified; this can be safer -- an error when
+     the result is of an unexpected type.
 
-  - `mapply()` (also `Map()`)
+- `mapply()` (also `Map()`)
 
     ```{r}
     args(mapply)
     ```
 
-    - `...` are one or more vectors, recycled to be of the same
-      length. `FUN` is a function that takes as many arguments as
-      there are components of `...`. `mapply` returns the result of
-      applying `FUN` to the elements of the vectors in `...`.
+  - `...` are one or more vectors, recycled to be of the same
+    length. `FUN` is a function that takes as many arguments as
+    there are components of `...`. `mapply` returns the result of
+    applying `FUN` to the elements of the vectors in `...`.
 
     ```{r mapply-eg}
     mapply(seq, 1:3, 4:6, SIMPLIFY=FALSE) # seq(1, 4); seq(2, 5); seq(3, 6)
     ```
 
-    - `apply()`
+  - `apply()`
 
     ```{r apply}
     args(apply)
     ```
 
-    - For a matrix or array `X`, apply `FUN` to each `MARGIN`
-      (dimension, e.g., `MARGIN=1` means apply `FUN` to each row,
-      `MARGIN=2` means apply `FUN` to each column)
+  - For a matrix or array `X`, apply `FUN` to each `MARGIN`
+    (dimension, e.g., `MARGIN=1` means apply `FUN` to each row,
+    `MARGIN=2` means apply `FUN` to each column)
 
-  - `repeat {}`, `for () {}`
+- Traditional iteration programming constructs `repeat {}`, `for () {}`
 
-    - Traditional programming constructs, almost always less
-      error-prone, more efficient, and more expressive to use
-      `lapply()`.
+  - Almost always more error-prone, less efficient, and harder to 
+    understand than `lapply()` !
 
-- Conditional: `if () {} else {}`
-- Functions (see table below for a few favorites)
+Conditional
 
-  - Easy to define your own functions
+```{r, eval=FALSE}
+if (test) {
+    ## code if TEST == TRUE
+} else {
+    ## code if TEST == FALSE
+}
+```
 
-    ```{r myfun}
-    fun <- function(x) {
-        length(unique(x))
-    }
-    ## list of length 5, each containsing a sample (with replacement) of letters
-    lets <- replicate(5, sample(letters, 50, TRUE), simplify=FALSE)
-    sapply(lets, fun)
-    ```
+Functions (see table below for a few favorites)
+
+- Easy to define your own functions
+
+```{r myfun}
+fun <- function(x) {
+    length(unique(x))
+}
+## list of length 5, each containsing a sample (with replacement) of letters
+lets <- replicate(5, sample(letters, 50, TRUE), simplify=FALSE)
+sapply(lets, fun)
+```
 
 ## Introspection & Help
 
@@ -147,23 +155,31 @@ Help
 
 ## Examples
 
+_R_ vectors, vectorized operations, `data.frame()`, formulas,
+functions, objects, class and method discovery (introspection).
+
 ```{r}
-x <- rnorm(1000)                   # atomic vectors
+x <- rnorm(1000)                     # atomic vectors
 y <- x + rnorm(1000, sd=.5)
-df <- data.frame(x=x, y=y)         # object of class 'data.frame'
-plot(y ~ x, df)                    # generic plot, method plot.formula
-fit <- lm(y ~x, df)                # object of class 'lm'
-methods(class=class(fit))          # introspection
+df <- data.frame(x=x, y=y)           # object of class 'data.frame'
+plot(y ~ x, df)                      # generic plot, method plot.formula
+fit <- lm(y ~x, df)                  # object of class 'lm'
+methods(class=class(fit))            # introspection
 anova(fit)
-plot(y ~ x, df)
+plot(y ~ x, df)                      # methods(plot); ?plot.formula
 abline(fit, col="red", lwd=3, lty=2) # a function, not generic.method
 ```
 
 Programming example -- group 1000 SYMBOLs into GO identifiers
 
-```{r lapply}
-## example data
+```{r lapply-setup, echo=FALSE}
 fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+```
+```{r lapply-user-setup, eval=FALSE}
+## example data
+fl <- file.choose()      ## symgo.csv
+```
+```{r lapply}
 symgo <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
 head(symgo)
 dim(symgo)

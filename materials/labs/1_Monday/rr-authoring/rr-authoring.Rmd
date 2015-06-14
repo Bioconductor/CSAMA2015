@@ -64,9 +64,10 @@ editor.
 
 Other types of document and frameworks that combine a programming and
 authoring languages are `Sweave` files (with `Rnw` extension, that
-combine LaTeX and `R`), [IPython](http://ipython.org/) for python and
-other languages,
-[orgmode](http://orgmode.org/manual/Working-With-Source-Code.html#Working-With-Source-Code),
+combine LaTeX and `R`),
+[Jupyter](http://jupyter.org)/[IPython](http://ipython.org/) for
+python, `R` and other languages,
+[orgmode](http://orgmode.org/manual/Working-With-Source-Code.html#Working-With-Source-Code)
 ...
 
 # `R` Markdown
@@ -83,8 +84,8 @@ This document describes `R` Markdown v2 based on
 [knitr](http://yihui.name/knitr/) and
 [`pandoc`](http://johnmacfarlane.net/pandoc/), the workhorse that
 converts markdown to html and many other formats. We will focus the
-generation of HTML and PDF documents, although other formats are
-available.
+generation of reports such this document in html and pdf, although
+other formats and type of documents are available.
 
 Note that PDF output requires a full installation of TeX and that
 pandoc is a third party application that needs to be installed outside
@@ -94,7 +95,7 @@ and `pandoc`.
 > **Tip**
 >
 > We would also like to warn against using MS Word as output document,
-> as this breaking the support for reproducibility. The final,
+> as this breaks the support for reproducibility. The final,
 > compiled document should be used for rendering only (which is
 > implicit for html of pdf files); editing should be performed on the
 > original documents, i.e the `Rmd` file.
@@ -112,7 +113,7 @@ These packages are pre-installed with RStudio.
 
 ## Markdown basics
 
-The figures below, taken from
+The figure below, taken from
 [the RStudio markdown (v2) tutorial](http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html)
 illustrates basic markdown syntax and its output using RStudio.
 
@@ -135,10 +136,10 @@ illustrates basic markdown syntax and its output using RStudio.
 
 ## File header
 
-R Markdown version 2 uses an *optional* header to define the title,
-author and output formats of the document. Below, we want to use
-`html` as final format; replace with `pdf_document` to produce a pdf
-report.
+R Markdown version 2 uses an *optional* header to define, among other
+things, the title, author and output formats of the `R` Markdown
+document. Below, we want to use `html` as final format; replace with
+`pdf_document` to produce a pdf report.
 
 ```
 ---
@@ -149,7 +150,7 @@ output: html_document
 ---
 ```
 
-## From `Rmd` to `html`
+## From `Rmd` to `html` (or `pdf`)
 
 If you are using RStudio, the simplest way to generate your final
 output is to open your `Rmd` file and click the `Knit HTML` (or `Knit
@@ -162,15 +163,46 @@ functions and give the `Rmd` source file as input.
 the document and generate the markdown `md` file that includes the
 code outputs.
 
-2. The generation of the final output will render the final document
-using `markdown::markdownToHTML` (in case of `knitr::knit2html`) or
-the more recent `rmarkdown::render`.
+2. The rendering of the final output document will be done using
+`markdown::markdownToHTML` (in case of `knitr::knit2html`), or the more
+recent `rmarkdown::render`.
+
+```{r knitit, eval=FALSE}
+library("knitr")
+knit2html("my_rr_document.Rmd")
+```
+
+```{r renderit, eval=FALSE}
+library("rmarkdown")
+render("my_rr_document.Rmd") ## default output is html
+render("my_rr_document.Rmd", output_format = "html_document") 
+```
+
+For pdf outputs using `knitr`
+
+```{r knititpdf, eval=FALSE}
+knit2pdf("my_rr_document.Rmd")
+```
+
+or `rmakdown`
+
+```{r renderitpdf, eval=FALSE}
+library("rmarkdown")
+render("my_rr_document.Rmd", output_format = "pdf_document")
+```
+
+And, to render all output formats defined in the header
+
+```{r renderall, eval=FALSE}
+render("my_rr_document.Rmd", output_format = "all") 
+```
+
+---------------------
 
 > **Exercise:** Experiment with `R` markdown and the features
 > described so far. To create your starting document, create a new `R
 > Markdown` file using the RStudio menu or copy/paste the template
 > below.
-
 
 ```
 ---
@@ -187,13 +219,11 @@ using `R` Markdown see <http://rmarkdown.rstudio.com>.
 When you click the **Knit** button a document will be generated that
 includes both content as well as the output of any embedded `R` code
 chunks within the document. You can embed an `R` code chunk like this:
-
 ```
 
-## More markdown syntax
+---------------------
 
-> **Exercise:** Experiment with the following syntax using the `Rmd`
-> file created above.
+## More markdown syntax
 
 ### Emphasis
 
@@ -335,6 +365,12 @@ H~2~O is a liquid.  2^10^ is 1024.
 H~2~O is a liquid.  2^10^ is 1024.
 ```
 
+---------------------
+
+> **Exercise:** Complement you `Rmd` file with some new syntax
+> elements.
+
+---------------------
 
 ## `R` code chunks
 
@@ -386,11 +422,15 @@ library("knitr")
 kable(dfr)
 ```
 
+---------------------
+
 > **Exercise:** Using the `iris` data set, create a reproducible
 > report that documents the data (dimensions, summary statistics, ...)
 > and provides a set of visualisations (a PCA plot, `pairs`, ...). To
 > conclude your report, add a *Session information* section with the
 > output of `sessionInfo()`.
+
+---------------------
 
 # Next steps
 

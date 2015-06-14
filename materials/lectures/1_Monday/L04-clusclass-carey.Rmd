@@ -48,25 +48,45 @@ library(ggvis)
 
 ```{r basicyccini,fig=TRUE,echo=FALSE,fig.height=3.6}
 library(png)
-im = readPNG("smallcyc.png")
+im = readPNG("figures/smallcyc.png")
 grid.raster(im)
 ```
 
 - How do you expect gene expression time series to cluster?
 
+## Expression clusters 
+
+- Spellman et al MBC '98;  dendrogram on left: bottom half labeled MCM
+```{r dofigyy,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("figures/spellLinks.png")
+grid.raster(im)
+```
+
+
 ## Species and organ of origin: microarrays and orthologues (McCall et al., _NAR_ 2012)
 
 ```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=4.4}
 library(png)
-im = readPNG("barcoTree.png")
+im = readPNG("figures/barcoTree.png")
 grid.raster(im)
 ```
+
+## Question
+
+- Multivariate analysis of the yeast cell cycle uses the gene expression trajectory over time as the data vector
+
+- Multivariate analysis of tissue of origin data uses a snapshot of the transcriptome as the data vector
+
+- Should the same methods be used for visualization and interpretation?  Why or why not?
+    - roles of convenience and agnosticism
+    - roles of biological _knowledge_ and potential for corroboration
 
 ## Species, organ of origin, and batch: RNA-seq and orthologues (Lin et al., _PNAS_ 2014)
 
 ```{r basicsnypc,fig=TRUE,echo=FALSE,fig.height=3.6}
 library(png)
-im = readPNG("snyderPC12.png")
+im = readPNG("figures/snyderPC12.png")
 grid.raster(im)
 ```
 
@@ -123,7 +143,7 @@ grid.raster(im)
 ## Interactive exploration of clustering {.columns-2}
 ```{r lookint,fig=TRUE,echo=FALSE,fig.width=5.1}
 library(png)
-im = readPNG("toolpic.png")
+im = readPNG("figures/toolpic.png")
 grid.raster(im)
 ```
 
@@ -204,18 +224,18 @@ hclustWidget(etiss)
 
 ## Some definitions
 
-```{r distdef,fig=TRUE,echo=FALSE,fig.height=4.99}
+```{r distdef,fig=TRUE,echo=FALSE,fig.height=5.2}
 library(png)
-im = readPNG("metricDef.png")
+im = readPNG("figures/metricDef.png")
 grid.raster(im)
 ```
 
 ## What is the ward.D2 agglomeration method?
 - Enables very rapid update upon change of distance or # genes
 
-```{r wardalg,fig=TRUE,echo=FALSE,fig.height=4.99}
+```{r wardalg,fig=TRUE,echo=FALSE,fig.height=5.2}
 library(png)
-im = readPNG("wards.png")
+im = readPNG("figures/wards.png")
 grid.raster(im)
 ```
 
@@ -223,7 +243,7 @@ grid.raster(im)
 
 ```{r jacc,fig=TRUE,echo=FALSE,fig.height=5.2}
 library(png)
-im = readPNG("jaccdef.png")
+im = readPNG("figures/jaccdef.png")
 grid.raster(im)
 ```
 
@@ -231,27 +251,27 @@ grid.raster(im)
 - classic example from 1983: correlation of grades and achievement test scores
 - arbitrary replication of multivariate records
 
-```{r boo1,fig=TRUE,echo=FALSE,fig.height=4.99}
+```{r boo1,fig=TRUE,echo=FALSE,fig.height=5.1}
 library(png)
-im = readPNG("bootstrap1.png")
+im = readPNG("figures/bootstrap1.png")
 grid.raster(im)
 ```
 
 ## What is the bootstrap distribution of a statistic?
 - sampling with replacement from the base records
 
-```{r boo2,fig=TRUE,echo=FALSE,fig.height=4.99}
+```{r boo2,fig=TRUE,echo=FALSE,fig.height=5.1}
 library(png)
-im = readPNG("bootstrap2.png")
+im = readPNG("figures/bootstrap2.png")
 grid.raster(im)
 ```
 
 ## How to use the bootstrap distribution?
 - estimate quantiles of the empirical distribution
 
-```{r boo3,fig=TRUE,echo=FALSE,fig.height=4.99}
+```{r boo3,fig=TRUE,echo=FALSE,fig.height=5.1}
 library(png)
-im = readPNG("bootstrap3.png")
+im = readPNG("figures/bootstrap3.png")
 grid.raster(im)
 ```
 
@@ -274,19 +294,31 @@ dm = dist(etiss[,1:250])
 sink(tempfile())
 cb <- clusterboot(dm, clustermethod=hclustCBI, method="ward.D2", k=6, showplots=FALSE, scaling=FALSE)
 sink(NULL)
-par(mfrow=c(2,3))
+op = par(no.readonly=TRUE)
+on.exit(par(op))
+par(mfrow=c(2,3), mar=c(4,3,2,2))
 for (i in 1:6) {hist(cb$bootresult[i,], xlim=c(0,1),
    main=paste0("Jacc. cl ", i)); abline(v=cb$bootmean[i])}
 }
 dojac()
 ```
-- dispersion should be reckoned
 
+- dispersion should be reckoned along with mean
+
+## Now that we know the definitions:
+```{r doe,echo=FALSE}
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
+rownames(etiss) = substr(tiss$Tissue,1,5)
+hclustWidget(etiss)
+```
 
 
 ## Summary 
-- agglomeration procedure has substantial impact
 - number of features (and detailed selection of features, not explored here) has impact
+- agglomeration procedure has substantial impact
 - number of clusters based on tree cutting
 - bootstrap distribution of Jaccard index measures cluster stability
 - ordination using principal components can be illuminating
@@ -307,26 +339,17 @@ dojac()
 
 ```{r basicycc,fig=TRUE,echo=FALSE,fig.height=4.2}
 library(png)
-im = readPNG("smallcyc.png")
+im = readPNG("figures/smallcyc.png")
 grid.raster(im)
 ```
 
 - Lee, Rinaldi _et al._, _Science_ 2002
 
-## Expression clusters 
-
-- Spellman et al MBC '98;  dendrogram on left: bottom half labeled MCM
-```{r dofigyy,fig=TRUE,echo=FALSE,fig.height=5.2}
-library(png)
-im = readPNG("spellLinks.png")
-grid.raster(im)
-```
-
 ## Yeast cell cycle: regulatory model
 
 ```{r regmod,fig=TRUE,echo=FALSE,fig.height=5.0}
 library(png)
-im = readPNG("fullcyc.png")
+im = readPNG("figures/fullcyc.png")
 grid.raster(im)
 ```
 

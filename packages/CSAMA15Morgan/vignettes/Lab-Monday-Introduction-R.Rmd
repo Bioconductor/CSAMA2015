@@ -340,9 +340,9 @@ brfss <- read.csv(fname)
    Y-axis. Experiment with different plotting symbols (try the command
    `example(points)` to view different points).
 
-     ```{r brfss-simple-plot}
-     plot(sqrt(Weight) ~ Height, brfss, main="All Years, Both Sexes")
-     ```
+    ```{r brfss-simple-plot}
+    plot(sqrt(Weight) ~ Height, brfss, main="All Years, Both Sexes")
+    ```
 
 4. Color the female and male points differently. To do this, use the
    `col` argument to `plot()`. Provide as a value to that argument a
@@ -351,23 +351,23 @@ brfss <- read.csv(fname)
 5. Create a subset of the data containing only observations from
    2010.
 
-     ```{r brfss-subset}
-     brfss2010 <- brfss[brfss$Year == "2010", ]
-     ```
+    ```{r brfss-subset}
+    brfss2010 <- brfss[brfss$Year == "2010", ]
+    ```
 
 6. Create the figure below (two panels in a single figure). Do this by
    using the `par()` function with the `mfcol` argument before calling
    `plot()`. You'll need to create two more subsets of data, perhaps
    when you are providing the data to the function `plot`.
 
-     ```{r brfss-pair-plot}
-     opar <- par(mfcol=c(1, 2))
-     plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Female", ],
-          main="2010, Female")
-     plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Male", ],
-          main="2010, Male")
-     par(mfcol=c(1, 1))
-     ```
+    ```{r brfss-pair-plot}
+    opar <- par(mfcol=c(1, 2))
+    plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Female", ],
+         main="2010, Female")
+    plot(sqrt(Weight) ~ Height, brfss2010[brfss2010$Sex == "Male", ],
+         main="2010, Male")
+    par(opar)                           # reset 'par' to original value
+    ```
 
 7. Plotting large numbers of points means that they are often
    over-plotted, potentially obscuring important patterns. Experiment
@@ -377,74 +377,111 @@ brfss <- read.csv(fname)
    formula). Try adding the [hexbin][] library to your R session
    (using `library()`) and creating a `hexbinplot()`.
 
-**Trellis graphics and the _lattice_ package**
+**ggplot2 graphics**
 
-R has a number of additional plotting facilities, both as part of the
-'base' distribution and user-contributed packages. The _lattice_
-package adopts a particular philosophy about the presentation of data,
-and can be a very effective visualization tool.
+1. Create a scatterplot showing the relationship between the square
+   root of weight and height, using the `r CRANpkg("ggplot2")`
+   library, and the annotate the plot. Two equivalent ways to create
+   the plot are show in the solution.
+    ```{r ggplot2-brfss-simple-plot}
+    library(ggplot2)
 
-1.  Use `library()` to load the _lattice_ package.
+    ## 'quick' plot
+    qplot(Height, sqrt(Weight), data=brfss)
 
-    ```{r lattice}
-    library(lattice)
+    ## specify the data set and 'aesthetics', then how to plot
+    ggplot(brfss, aes(x=Height, y=sqrt(Weight))) +
+        geom_point()
+    ```
+   `qplot()` gives us a warning which states that it has removed rows
+   containing missing values. This is actually very helpful because we
+   find out that our dataset contains `NA`'s and we can take a design
+   decision here about what we'd like to do these `NA`'s. We can find
+   the indicies of the rows containing `NA` using `is.na()`, and count
+   the number of rows with `NA` values using `sum()`:
+    ```{r ggplot2-na-in-dataset}
+    sum(is.na(brfss$Height))
+    sum(is.na(brfss$Weight))
+    drop <- is.na(brfss$Height) | is.na(brfss$Weight)
+    sum(drop)
+    ```
+   Remove the rows which contain `NA`'s in Height and Weight.
+    ```{r ggplot2-remove-na}
+    brfss <- brfss[!drop,]
+    ```
+   Plot is annotated with
+    ```{r ggplot2-annotate}
+    qplot(Height, sqrt(Weight), data=brfss) +
+        ylab("Square root of Weight") + 
+            ggtitle("All Years, Both Sexes")
     ```
 
-2. Create the following figure using the `xyplot()` function with a
-   formula and the `brfss2010` data. The formula is `sqrt(Weight) ~
-   Height | Sex`, which can be read as `square root of Weight as a
-   function of Height, conditioned on Sex'.
+2. Color the female and male points differently.
 
-   ```{r lattice-conditioning}
-   xyplot(sqrt(Weight) ~ Height | Sex, brfss2010)
-   ```
+    ```{r ggplot2-color}
+    ggplot(brfss, aes(x=Height, y=sqrt(Weight), color=Sex)) + 
+        geom_point()
+    ```
+   One can also change the shape of the points for the female and male
+   groups
 
-3. Add a background grid and a regression line to each panel using the
-   argument `type=c('p', 'g', 'r')`; change the width (`lwd`) and
-   color (`col.line`) of the regression line. For some hints on other
-   arguments, see the help pages `?xyplot` (for overall structure of
-   the plot) and `?panel.xyplot` (for how each 'panel' of data is
-   plotted).
-
-4. Create the following figure. Use the `densityplot()` function with
-   the formula `~ sqrt(Weight)`. The `group=Sex` function argument
-   creates separate lines for each sex. Be sure to use
-   `plot.points=FALSE` to avoid a `rug' of points at the base of the
-   figure. Can you add a key (legend)?
-
-   ```{r lattice-density}
-   densityplot(~sqrt(Weight), brfss2010, group=Sex, plot.points=FALSE)
-   ```
-
-5. Create the figure below using the `bwplot` function. The formula
-   requires that `Year` be coerced to a `factor`, `factor(Year)`.
-
-    ```{r lattice-bwplot}
-    bwplot(sqrt(Weight) ~ factor(Year) | Sex, brfss)
+    ```{r ggplot2-shape}
+    ggplot(brfss, aes(x=Height, y = sqrt(Weight), color=Sex, shape=Sex)) + 
+        geom_point()
+    ```
+   or plot Male and Female in different panels using `facet_grid()`
+    ```{r ggplot2-shape-facet}
+    ggplot(brfss, aes(x=Height, y = sqrt(Weight), color=Sex)) + 
+        geom_point() +
+            facet_grid(Sex ~ .)
     ```
 
-6.  Create the Figure below, a _violin_ plot, using `bwplot()` and the
-    `panel` argument set to `panel.violin`. from `?bwplot` we learn
-    that `panel` is a function that determines how each panel is
-    drawn; the details for controling the violin panel plot are
-    described on the help page `?panel.violin`.
+3. Create a subset of the data containing only observations from 2010
+   and make density curves for male and female groups. Use the `fill`
+   aesthetic to indicate that each sex is to be calculated separately,
+   and `geom_density()` for the density plot.
 
-    ```{r lattice-violin}
-    bwplot(sqrt(Weight) ~ factor(Year) | Sex, brfss, panel=panel.violin)
+    ```{r ggplot2-subset-facet}
+    brfss2010 <- brfss[brfss$Year == "2010", ]
+    ggplot(brfss2010, aes(x=sqrt(Weight), fill=Sex)) +
+        geom_density(alpha=.25)
     ```
 
-7. (Advanced) We can write our own `panel` argument to _lattice_
-   functions to influence how each panel is displayed. Here we add a
-   point at the median age and weight.
+4. Plotting large numbers of points means that they are often
+   over-plotted, potentially obscuring important patterns. Make the
+   points semi-transparent using alpha. Here we make them 60%
+   transparent. The solution illustrates a nice feature of ggplot2 --
+   a partially specified plot can be assigned to a variable, and the
+   variable modified at a later point.
 
-    ```{r lattice-panel}
-    xyplot(sqrt(Weight) ~ Height|Sex, brfss2010,
-        panel = function(x, y, ...) {
-            panel.xyplot(x, y, ...)
-            panel.points(median(x, na.rm=TRUE), median(y, na.rm=TRUE),
-                cex=2, pch=20, col="red")
-        },
-        type=c("p", "g", "r"), lwd=2, col.line="red", xlim=c(120, 210))
+    ```{r ggplot2-transparent}
+    sp <- ggplot(brfss, aes(x=Height, y=sqrt(Weight)))
+    sp + geom_point(alpha=.4)
+    ```
+
+5. Add a fitted regression model to the scatter plot.
+
+    ```{r ggplot2-regression}
+    sp + geom_point() + stat_smooth(method=lm)
+    ```
+   By default, `stat_smooth()` also adds a 95% confidence region for
+   the regression fit. The confidence interval can be changed by
+   setting level, or it can be disabled with `se=FALSE`.
+
+    ```{r ggplot2-regression-2, eval=FALSE}
+    sp + geom_point() + stat_smooth(method=lm + level=0.95)
+    sp + geom_point() + stat_smooth(method=lm, se=FALSE)
+    ```
+
+6. How do you fit a linear regression line for each group? First we’ll
+   make the base plot object sps, then we’ll add the linear regression
+   lines to it.
+
+    ```{r ggplot2-regression-bygroup}
+    sps <- ggplot(brfss, aes(x=Height, y=sqrt(Weight), colour=Sex)) +
+        geom_point() +
+            scale_colour_brewer(palette="Set1")
+    sps + geom_smooth(method="lm")
     ```
 
 [BRFSS]: http://www.cdc.gov/brfss/

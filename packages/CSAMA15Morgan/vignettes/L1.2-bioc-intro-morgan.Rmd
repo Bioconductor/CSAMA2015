@@ -26,7 +26,7 @@ Authors: Martin Morgan (<a
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back: [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](L1.0-lab-intro-morgan.html)
 
 # _Bioconductor_
 
@@ -90,14 +90,14 @@ library(GenomicRanges)
 ## Example: _Biostrings_ for DNA sequences
 
 ```{r Biostrings, message=FALSE}
-require(Biostrings)                     # Biological sequences
+library(Biostrings)                     # Biological sequences
 data(phiX174Phage)                      # sample data, see ?phiX174Phage
 phiX174Phage
 m <- consensusMatrix(phiX174Phage)[1:4,] # nucl. x position counts
 polymorphic <- which(colSums(m != 0) > 1)
 m[, polymorphic]
 ```
-```{r methods}
+```{r methods, eval=FALSE}
 methods(class=class(phiX174Phage))      # 'DNAStringSet' methods
 ```
 

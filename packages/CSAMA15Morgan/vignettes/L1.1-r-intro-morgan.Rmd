@@ -21,7 +21,7 @@ Authors: Martin Morgan (<a
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back: [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](L1.0-lab-intro-morgan.html)
 
 # R
 

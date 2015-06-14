@@ -24,7 +24,7 @@ Authors: Martin Morgan (<a
   Arora (<a
   href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
 Date: 15 June, 2015<br />
-Back: [Monday labs](Lab-Monday-Introduction.html)
+Back: [Monday labs](L1.0-lab-intro-morgan.html)
 
 # Classes, methods, and packages
 
@@ -358,7 +358,7 @@ Between-range methods
 Example
 
 ```{r ranges, message=FALSE}
-require(GenomicRanges)
+library(GenomicRanges)
 gr <- GRanges("A", IRanges(c(10, 20, 22), width=5), "+")
 shift(gr, 1)                            # 1-based coordinates!
 range(gr)                               # intra-range
@@ -414,7 +414,7 @@ Example
   calculates GC content across chr14.
 
     ```{r BSgenome-require, message=FALSE}
-    require(BSgenome.Hsapiens.UCSC.hg19)
+    library(BSgenome.Hsapiens.UCSC.hg19)
     chr14_range = GRanges("chr14", IRanges(1, seqlengths(Hsapiens)["chr14"]))
     chr14_dna <- getSeq(Hsapiens, chr14_range)
     letterFrequency(chr14_dna, "GC", as.prob=TRUE)
@@ -441,14 +441,14 @@ Example
   19653707 + 66M = 19653773 of chromosome 14
 
     ```{r bam-require}
-    require(GenomicRanges)
-    require(GenomicAlignments)
-    require(Rsamtools)
+    library(GenomicRanges)
+    library(GenomicAlignments)
+    library(Rsamtools)
     
     ## our 'region of interest'
     roi <- GRanges("chr14", IRanges(19653773, width=1)) 
     ## sample data
-    require('RNAseqData.HNRNPC.bam.chr14')
+    library('RNAseqData.HNRNPC.bam.chr14')
     bf <- BamFile(RNAseqData.HNRNPC.bam.chr14_BAMFILES[[1]], asMates=TRUE)
     ## alignments, junctions, overlapping our roi
     paln <- readGAlignmentsList(bf)
@@ -481,12 +481,12 @@ Example
   
     ```{r vcf, message=FALSE}
     ## input variants
-    require(VariantAnnotation)
+    library(VariantAnnotation)
     fl <- system.file("extdata", "chr22.vcf.gz", package="VariantAnnotation")
     vcf <- readVcf(fl, "hg19")
     seqlevels(vcf) <- "chr22"
     ## known gene model
-    require(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    library(TxDb.Hsapiens.UCSC.hg19.knownGene)
     coding <- locateVariants(rowRanges(vcf),
         TxDb.Hsapiens.UCSC.hg19.knownGene,
         CodingVariants())

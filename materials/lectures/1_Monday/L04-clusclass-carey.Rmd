@@ -1,0 +1,1122 @@
+---
+title: "CSAMA 2015: Clustering and classification"
+author: Vince Carey
+date: May 22, 2005
+output: 
+  ioslides_presentation:
+    incremental: false
+    fig_height: 3.6
+runtime: shiny
+---
+
+```{r setup,echo=FALSE,results="hide"}
+suppressMessages({
+suppressPackageStartupMessages({
+suppressWarnings({
+library(BiocStyle)
+library(shiny)
+library(rmarkdown)
+library(yeastCC)
+library(cluster)
+library(grid)
+library(png)
+library(limma)
+library(rafalib)
+library(fpc)
+library(impute)
+library(Biobase)
+library(tissuesGeneExpression)
+library(ggvis)
+})
+})
+})
+```
+# Overview 
+
+## Basic concepts 
+
+- Organisms are assayed on multiple features
+- _Variability_ in feature measures exhibits _structure_
+- Clustering:
+    - For some grouping, between-group variation is larger than within-group variation
+    - Our goals are to find, evaluate, and interpret such groupings 
+- Classification:
+    - Organisms are sorted into classes and labeled
+    - Rules for classification are maps from features to labels
+    - Our goals are to find, evaluate, and interpret such rules
+
+## Yeast cell cycle: phenotypic transitions (Lee, Rinaldi et al. _Science_ 2002)
+
+```{r basicyccini,fig=TRUE,echo=FALSE,fig.height=3.6}
+library(png)
+im = readPNG("figures_vjc/smallcyc.png")
+grid.raster(im)
+```
+
+- How do you expect gene expression time series to cluster?
+
+## Expression clusters 
+
+- Spellman et al MBC '98;  dendrogram on left: bottom half labeled MCM
+```{r dofigyy,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("figures_vjc/spellLinks.png")
+grid.raster(im)
+```
+
+
+## Species and organ of origin: microarrays and orthologues (McCall et al., _NAR_ 2012)
+
+```{r basicbarco,fig=TRUE,echo=FALSE,fig.height=4.4}
+library(png)
+im = readPNG("figures_vjc/barcoTree.png")
+grid.raster(im)
+```
+
+## Question
+
+- Multivariate analysis of the yeast cell cycle uses the gene expression trajectory over time as the data vector
+
+- Multivariate analysis of tissue of origin data uses a snapshot of the transcriptome as the data vector
+
+- Should the same methods be used for visualization and interpretation?  Why or why not?
+    - roles of convenience and agnosticism
+    - roles of biological _knowledge_ and potential for corroboration
+
+## Species, organ of origin, and batch: RNA-seq and orthologues (Lin et al., _PNAS_ 2014)
+
+```{r basicsnypc,fig=TRUE,echo=FALSE,fig.height=3.6}
+library(png)
+im = readPNG("figures_vjc/snyderPC12.png")
+grid.raster(im)
+```
+
+- Between-species disparity stronger than within-organ similarity
+
+## Three data analysis problems {.smaller}
+
+- Experimental contexts
+    - Transcriptional cascade in the yeast cell cycle
+        - PT Spellman _et al._, _MBC_ 1998
+        - time course on each gene yields 6000+ 18-vectors
+        - group genes in search for mechanisms of coregulation
+    - Distinguishing organ of origin through gene expression patterns
+        - McCall _et al._, _NAR_ 2011
+        - adjusted arrays yield 85 22215-vectors
+        - cluster or classify samples to identify distinguishing gene sets
+    - Comparison of human and mouse transcriptomes
+        - Lin _et al._, _PNAS_ 2014
+        - mRNA abundance for orthologous genes by RNA-seq, 30 15106-vectors
+        - assess similarity of transcriptomes by tissue and by species
+
+## Clustering concept
+
+- Clustering: establishes a modular structure in the data
+    - explanation through contrast, divide and conquer
+- Methods questions:
+    - can we rely on mathematical approaches to contrasts and subdivisions among objects to define substantively meaningful distinctions?
+    - are there internal (data-driven) measures of cluster quality?
+    - can we simplify assessment using external information (e.g., TF binding data to rationalize assertions of coregulation?)
+
+## Classification methods 
+
+- Objects are already grouped; module labels and assignments given _a priori_
+    - with features $x$ and labels $y$, can we discover $f$ satisfying $y_i \approx f(x_i)$ for instance $i$?
+    - Over what class of functions shall we search?
+    - How shall we measure the quality of the approximation?
+    - Do we require $f$ to have an interpretation, or are we satisfied with a black-box prediction machine?
+- These questions are intertwined
+    - It may be more valuable to have a good estimate of a regression parameter than a "more accurate" but uninterpretable feature processor
+    - The scope of the search for $f$ leads to risks of overfitting
+
+## Statistical concepts to master
+
+- object representations and distances in high-dimensional spaces
+- criteria for assigning objects to clusters, or labels to objects
+- tuning of clustering and classification procedures
+- measures of cluster quality: silhouette, Jaccard index
+- approaches to sampling from population models: bootstrap
+- systematic approaches to reducing bias of model appraisals
+    - test vs train (single split)
+    - V-fold cross-validation (V splits)
+    - leave-one-out cross-validation (N splits)
+
+# Cluster analysis concepts
+
+## Interactive exploration of clustering {.columns-2}
+```{r lookint,fig=TRUE,echo=FALSE,fig.width=5.1}
+library(png)
+im = readPNG("figures_vjc/toolpic.png")
+grid.raster(im)
+```
+
+   - number of genes; distance between objects (tissues or gene expression time series)
+   - agglomeration method for tree construction
+   - number of groups via cutree
+   - mean bootstrapped Jaccard similarity
+   - PC ordination with colors
+   - assignment (mouseover)
+
+```{r sta, echo=FALSE}
+data(tissuesGeneExpression)
+library(Biobase)
+tiss = ExpressionSet(e)
+rownames(tab) = colnames(e)
+pData(tiss) = tab
+tiss = tiss[, tiss$SubType == "normal"]
+#datatable(pData(tiss))
+```
+
+## Exploring clusters with tissue-of-origin data
+
+```{r lkwid, echo=FALSE}
+hclustWidget = function(mat) {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  numericInput("ngenes", label = "N genes:", 500, min = 2, max = 100000)),
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="complete")),
+   column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9))
+          ),
+  fluidRow(column(8, plotOutput("tree")), column(4, ggvisOutput("pcp")))
+ ), server= function(input, output, session) {
+    output$tree <- renderPlot({
+dm = dist(mat[,1:input$ngenes], method=input$distmeth)
+sink(tempfile())
+cb <- clusterboot(dm, clustermethod=hclustCBI, method=input$fusemeth, k=input$numclus, showplots=FALSE, scaling=FALSE)
+sink(NULL)
+      dend = hclust( dm, method=input$fusemeth )
+      par(mar=c(3,3,3,1))
+      plot(dend, main=paste0("Boot. Jacc. at k=", input$numclus, ": ",
+        paste(round(cb$bootmean,2), collapse=", ")), xlab=" ")
+    })
+    P1 <- reactive({
+           all_values <- function(x) {
+             if(is.null(x)) return(NULL)
+             row <- pcdf[pcdf$rowid == x$rowid, ]
+             paste0(names(row), ": ", format(row), collapse = "<br />")
+           }
+
+      pc = prcomp(mat[,1:input$ngenes])$x
+      dm = dist(mat[,1:input$ngenes], method=input$distmeth)
+
+
+      dend = hclust( dm, method=input$fusemeth )
+      ct = cutree(dend, k=input$numclus)
+      pcdf = data.frame(PC1=pc[,1], PC2=pc[,2], tiss=pData(tiss)$Tissue,
+         rowid=1:nrow(pc), assigned=factor(ct))
+      pcdf %>% ggvis(~PC1, ~PC2, key := ~rowid, fill = ~assigned) %>% layer_points() %>%
+               add_tooltip(all_values, "hover") 
+#      pairs(pc[,1:3], col=ct, pch=19, cex=1.5)
+      }) 
+      P1 %>% bind_shiny("pcp")
+} )
+}
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
+rownames(etiss) = substr(tiss$Tissue,1,5)
+hclustWidget(etiss)
+```
+
+## Some definitions
+
+```{r distdef,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("figures_vjc/metricDef.png")
+grid.raster(im)
+```
+
+## Example: Euclidean distance
+
+- High-school analytic geometry: distance between two points in $R^3$
+- $p_1 = (x_1, y_1, z_1)$, $p_2 = (x_2, y_2, z_2)$
+- $\Delta x = x_1 - x_2$, etc.
+- $d(p_1, p_2) = \sqrt{(\Delta x)^2 + (\Delta y)^2 + (\Delta z)^2}$
+
+## What is the ward.D2 agglomeration method?
+- Enables very rapid update upon change of distance or # genes
+
+```{r wardalg,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("figures_vjc/wards.png")
+grid.raster(im)
+```
+
+## What is the Jaccard similarity coefficient?
+
+```{r jacc,fig=TRUE,echo=FALSE,fig.height=5.2}
+library(png)
+im = readPNG("figures_vjc/jaccdef.png")
+grid.raster(im)
+```
+
+## What is the bootstrap distribution of a statistic? {.smaller}
+- classic example from 1983: correlation of grades and achievement test scores
+- arbitrary replication of multivariate records
+
+```{r boo1,fig=TRUE,echo=FALSE,fig.height=5.1}
+library(png)
+im = readPNG("figures_vjc/bootstrap1.png")
+grid.raster(im)
+```
+
+## What is the bootstrap distribution of a statistic?
+- sampling with replacement from the base records
+
+```{r boo2,fig=TRUE,echo=FALSE,fig.height=5.1}
+library(png)
+im = readPNG("figures_vjc/bootstrap2.png")
+grid.raster(im)
+```
+
+## How to use the bootstrap distribution?
+- estimate quantiles of the empirical distribution
+
+```{r boo3,fig=TRUE,echo=FALSE,fig.height=5.1}
+library(png)
+im = readPNG("figures_vjc/bootstrap3.png")
+grid.raster(im)
+```
+
+## Bootstrap distributions of Jaccard
+```{r echo=FALSE, fig=TRUE}
+dojac = function() {
+data(tissuesGeneExpression)
+library(Biobase)
+tiss = ExpressionSet(e)
+rownames(tab) = colnames(e)
+pData(tiss) = tab
+tiss = tiss[, tiss$SubType == "normal"]
+
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
+rownames(etiss) = substr(tiss$Tissue,1,5)
+dm = dist(etiss[,1:250])
+sink(tempfile())
+cb <- clusterboot(dm, clustermethod=hclustCBI, method="ward.D2", k=6, showplots=FALSE, scaling=FALSE)
+sink(NULL)
+op = par(no.readonly=TRUE)
+on.exit(par(op))
+par(mfrow=c(2,3), mar=c(4,3,2,2))
+for (i in 1:6) {hist(cb$bootresult[i,], xlim=c(0,1),
+   main=paste0("Jacc. cl ", i)); abline(v=cb$bootmean[i])}
+}
+dojac()
+```
+
+- dispersion should be reckoned along with mean
+
+## Now that we know the definitions:
+```{r doe,echo=FALSE}
+et = exprs(tiss)
+mado = order(apply(et,1,mad), decreasing=TRUE)
+et = et[mado,]
+etiss = t(et)
+rownames(etiss) = substr(tiss$Tissue,1,5)
+hclustWidget(etiss)
+```
+
+
+## Summary 
+- number of features (and detailed selection of features, not explored here) has impact
+- agglomeration procedure has substantial impact
+- number of clusters based on tree cutting
+- bootstrap distribution of Jaccard index measures cluster stability
+- ordination using principal components can be illuminating
+- procedure is sensitive but sensible choices recapitulate biology
+- there are bivariate outliers in PC1-PC2 view
+
+## Road map
+
+- yeast cell cycle 
+    - compute distance to an interpretable prototype
+    - illustrate silhouette measure against random grouping
+    - define families of exemplars through trigonometric regression
+    - use F-statistics and parameter estimates to filter and discriminate patterns
+- normalized tissue-specific expression 
+    - demonstrate
+
+## Yeast cell cycle: phenotypic transitions 
+
+```{r basicycc,fig=TRUE,echo=FALSE,fig.height=4.2}
+library(png)
+im = readPNG("figures_vjc/smallcyc.png")
+grid.raster(im)
+```
+
+- Lee, Rinaldi _et al._, _Science_ 2002
+
+## Yeast cell cycle: regulatory model
+
+```{r regmod,fig=TRUE,echo=FALSE,fig.height=5.0}
+library(png)
+im = readPNG("figures_vjc/fullcyc.png")
+grid.raster(im)
+```
+
+- TF binding data added to expression patterns
+
+
+## a data extract: _S. cerevisiae_ colony synchronized with alpha pheromone
+
+```{r lky}
+library(yeastCC)
+data(spYCCES)
+alp = spYCCES[, spYCCES$syncmeth=="alpha"]
+rbind(time=alp$time[1:5],exprs(alp)[1:5,1:5])
+```
+
+- G=`r nrow(exprs(alp))` genes comprise rows, N=`r ncol(exprs(alp))` timed samples comprise columns
+
+## Raw trajectories for some of the genes in MCM cluster
+
+```{r lkmcmcc, echo=FALSE,fig=TRUE}
+mcm0 = c("YDR055W", "YNL078W", "YNR067C", "YOR263C", "YNL046W", "YOR264W", 
+"YJL159W", "YPL158C", "YKL116C", "YDL117W", "YGR086C", "YIL104C", 
+"YBR158W", "YGR234W", "YNL327W", "YDL179W", "YNL192W", "YIL009W", 
+"YBR083W", "YKL164C", "YKL163W", "YKL185W", "YLR079W", "YGR044C"
+)
+matplot(alp$time, t(exprs(alp)[mcm0,]), type="l", lwd=2, ylab="expr",
+   xlab="time (m)")
+```
+
+- consistent with annotation to M/G1
+
+
+
+## A pattern of interest ("prototype", but not in the data)
+
+- Define a _basal oscillator_ to be a gene with expression varying with the cell cycle in a specific way
+    - for alpha-synchronized colony, cell cycle period is about 66 minutes
+    
+- Theoretical expression trajectory
+```{r lkba,fig=TRUE,echo=FALSE}
+times=0:132
+bo = sin(2*pi*times/66)
+plot(times, bo, type="l")
+abline(h=0,lty=2,col="gray")
+abline(v=66,lty=2,col="gray")
+```
+
+## Formalism for the basal oscillator prototype
+ 
+- $t$ denotes time (in minutes) elapsed from synchronization
+- $X_g(t)$ denotes reported expression of gene $g$ at time $t$
+- $m_g = \min_t X_g(t)$, $M_g = \max_t X_g(t)$
+- $U_g(t) = 2 \times [\frac{X_g(t) - m_g}{M_g-m_g} - 0.5]$ is
+signed fractional excursion (sfe) of gene $g$ at time $t$
+    - if $g$ is at minimal reported value at $t$, $U_g(t) = -1$
+    - if $g$ is at maximal reported value at $t$, $U_g(t) = +1$
+- if $g$ is a basal oscillator, what is the form of $U_g(t)$?
+
+## One possible form for $U_g(t)$ for $g$ a basal oscillator
+
+- $U_g(t) = \sin(2 \pi t/ 66)$, $t$ in minutes from synchronization
+- Why?
+    - $\sin$ function has range [-1,1]
+    - smoothness corresponds to gradual nature of transition
+    - returns to 0 at multiples of 66 minutes
+- Drawbacks?
+    - periodicity is biologically motivated, but the detailed trajectory with various local symmetries is not justified 
+- Survey: How many genes are reasonably modeled by the basal oscillator pattern? 0, 10, 100, 1000?
+
+## Application of the distance concept
+
+- What is the dimension of the space in which a yeast gene expression trajectory resides?
+- How can we define the distance between a given gene's trajectory and that corresponding to the basal oscillator pattern?  Assumptions?
+-
+```{r f2,fig=TRUE,echo=FALSE}
+suppressWarnings({
+times=1:132
+bo = sin(2*pi*times/66)
+ea = exprs(alp)
+unitize = function(x) {
+ tmp = (x-min(x,na.rm=TRUE))/(max(x,na.rm=TRUE)-min(x,na.rm=TRUE))
+ 2*(tmp-.5)
+}
+uea = t(apply(ea,1,unitize))
+plot(times, bo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[1,], lty=2)
+legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[1]))
+})
+```
+
+## Computing distances to basal oscillator pattern
+
+```{r dodis}
+bot = function(tim) sin(2*pi*tim/66)
+bo = bot(alp$time)
+d2bo = function(x) sqrt(sum((x-bo)^2))
+suppressWarnings({ds = apply(uea, 1, d2bo)})
+md = which.min(ds)
+md
+summary(ds)
+```
+
+## The nearest gene
+
+```{r lkgcl, fig=TRUE}
+plot(alp$time, bo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[md,], lty=2)
+legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[md]))
+```
+
+## The distribution of distances
+
+```{r lkh,fig=TRUE}
+hist(ds, xlab="Euclidean distance to basal oscillator pattern")
+```
+
+- What should this look like if there is clustering?
+
+## "Top ten!"
+
+```{r lkgcl2, fig=TRUE}
+todo = names(sort(ds))[1:10]
+plot(alp$time, bo, type="l", xlab="time", ylab="sfe")
+for (md in todo) lines(alp$time, uea[md,], lty=2, col="gray")
+#legend(38,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[md]))
+```
+
+## Is it a cluster?
+
+- Recall the definition:
+    - _Variability_ in feature measures exhibits _structure_
+    - For some grouping, between-group variation is larger than within-group variation
+    - Can we make this more precise?
+
+## Definition from ?silhouette
+```
+   For each observation i, the _silhouette width_ s(i) is defined as
+     follows:
+     Put a(i) = average dissimilarity between i and all other points of
+     the cluster to which i belongs (if i is the _only_ observation in
+     its cluster, s(i) := 0 without further calculations).  For all
+     _other_ clusters C, put d(i,C) = average dissimilarity of i to all
+     observations of C.  The smallest of these d(i,C) is b(i) := \min_C
+     d(i,C), and can be seen as the dissimilarity between i and its
+     “neighbor” cluster, i.e., the nearest one to which it does _not_
+     belong.  Finally,
+
+                   s(i) := ( b(i) - a(i) ) / max( a(i), b(i) ).         
+     
+     ‘silhouette.default()’ is now based on C code donated by Romain
+     Francois (the R version being still available as
+     ‘cluster:::silhouette.default.R’).
+```
+
+
+## Realizations of an unstructured grouping scheme
+- Form some arbitrarily chosen groups of size ten
+- The code:
+```{r dospl}
+allf = featureNames(alp)
+set.seed(2345)
+scramble = function(x) sample(x, size=length(x), replace=FALSE) 
+cands = scramble(setdiff(allf, todo))[1:40]
+sc = split(cands, gids <- rep(2:5,each=10))
+ml = lapply(sc, function(x) uea[x,])
+```
+
+## Trajectories from the arbitrary groups {.flexbox .vcenter}
+
+```{r getgr, fig=TRUE,echo=FALSE,fig.height=5}
+par(mfrow=c(2,2), mar=c(4,2,2,2))
+for (i in 1:4) {
+ plot(alp$time, ml[[i]][1,], type="l", lty=2, col="gray", main=paste("group", i+1), xlab="time", ylab="sfe")
+ for (j in 2:9) lines(alp$time, ml[[i]][j,], type="l", lty=2, col="gray")
+}
+```
+
+## The silhouette plot
+
+```{r dof,fig=TRUE,echo=FALSE}
+alld = c(todo, cands)
+labs = c(rep(1,10), gids)
+d = dist(uea[alld,])
+s = silhouette(labs, d) 
+plot(s)
+```
+
+## Recap
+- A target pattern was defined, using knowledge of the cell cycle period
+- Expression patterns were transformed to conform to the dynamic
+range of the target pattern
+- A distance function was defined and genes ordered by proximity to
+target
+- A group of ten genes nearest to target trajectory was identified
+and compared to arbitrarily formed groups using silhouette widths
+- Transformation, Distance, and Comparison are fundamental elements
+of all cluster analysis
+    - but a fixed target pattern is not so common in genomics
+    - compare handwriting or speech waveform analysis
+
+## Another exemplar
+- Give the mathematical definition of the hyperbasal oscillator pattern,
+that has value 1 at time 0 and returns to 1 at 66 minutes
+- Which gene has expression trajectory closest to that of the
+hyperbasal oscillator?
+- How many steps to determine the mean silhouette width for the
+ten genes closest to the hyperbasal pattern?
+
+## Solution
+
+```{r dodis2,fig=FALSE}
+hbot = function(tim) cos(2*pi*tim/66)
+hbo = hbot(alp$time)
+d2hbo = function(x) sqrt(sum((x-hbo)^2))
+suppressWarnings({cds = apply(uea, 1, d2hbo)})
+cmd = which.min(cds)
+cmd
+summary(cds)
+```
+
+## The most hyperbasal gene
+
+```{r lkgcl3, fig=TRUE}
+plot(alp$time, hbo, type="l", xlab="time", ylab="sfe")
+lines(alp$time, uea[cmd,], lty=2)
+legend(20,.87, lty=c(1,2), legend=c("basal osc.", featureNames(alp)[cmd]))
+```
+
+## "Top ten!"
+
+```{r getmoc,fig=TRUE}
+ctodo = names(sort(cds)[1:10])
+plot(alp$time, hbo, type="l", xlab="time", ylab="sfe")
+for (md in ctodo) lines(alp$time, uea[md,], lty=2, col="gray")
+```
+
+## Silhouette continuation
+
+```{r cdof,fig=TRUE,echo=FALSE}
+alld = c(todo, cands, ctodo)
+labs = c(rep(1,10), gids, rep(6,10))
+d = dist(uea[alld,])
+s = silhouette(labs, d) 
+plot(s)
+```
+
+## Caveats
+
+- We ignored the natural units reported for expression
+- The pure sinusoid need not be a reasonable trajectory model for any gene
+- We arbitrarily thresholded to achieve groups of size 10
+- Can we use the data to define groups of genes with similar expression patterns without so much conceptual intervention?
+
+## Hierarchical clustering
+
+- Subdivision of the genome into coexpressed groups is of general interest
+- Agglomerative algorithms use the distance measure to combine very similar genes into new entities 
+- The process repeats until only one entity remains
+
+## Filtering
+
+- We would like to look for structure among expression patterns of genes exhibiting oscillatory behavior
+- Thus we would like to filter away genes with non-periodic trajectories
+- Trigonometric regression can help
+    - $t$ is transformed to [0,1]; estimate $s_{gj}$ and $c_{gj}$ in
+$$ X_g(t) = \sum_{j=1}^J s_{gj} \sin 2j\pi t + \sum_{j=1}^J c_{gj} \cos 2j \pi t + e_g(t) $$
+- We will cluster genes possessing relatively large $F$ statistics for this model, fixing $J=2$
+
+## limma for trigonometric regression fits
+
+```{r dolimm}
+options(digits=2)
+x = (alp$time %% 66)/66
+mm = model.matrix(~sin(2*pi*x)+cos(2*pi*x)+sin(4*pi*x)+cos(4*pi*x)-1)
+colnames(mm) = c("s1", "c1", "s2", "c2")
+library(limma)
+m1 = lmFit(alp, mm)
+em1 = eBayes(m1)
+topTable(em1, 1:4, n=5)
+```
+
+## Interactive interface
+
+
+```{r tryint,echo=FALSE}
+top100 = topTable(em1, 1:4, n=100)
+format_num <- function(col) {
+  if (is.numeric(col))
+    sprintf('%1.3f', col)
+  else
+    col
+}
+top100f = as.data.frame(lapply(top100, format_num), stringsAsFactors=FALSE)
+top100f = cbind(orf=rownames(top100),top100f)
+rownames(top100f) = rownames(top100)
+d100 = impute.knn(exprs(alp)[rownames(top100),])$data
+rownames(d100) = rownames(top100)
+top100f[,2] = as.numeric(top100f[,2])
+top100f[,3] = as.numeric(top100f[,3])
+top100f[,4] = as.numeric(top100f[,4])
+top100f[,5] = as.numeric(top100f[,5])
+
+ui = fluidPage(titlePanel("trigonometric regression for yeast expression"),
+#
+# should be selectize
+#
+   fluidRow( column(3, DT::dataTableOutput('toptable')) ,
+   column(3,selectizeInput('orf', 'ORF', choices=NULL,
+           selected="YMR011W", options=list(placeholder="YMR011W"),
+           multiple=FALSE)),
+   column(5, plotOutput('trajplot'))
+   )
+  )
+
+server = function(input, output, session) {
+
+# Apply the function to each column, and convert the list output back to a data frame
+   INI = reactive({
+      if (is.null(input$orf) | nchar(input$orf)==0) return("YMR011W")
+      else input$orf
+      })
+   output$toptable = DT::renderDataTable(
+      DT::datatable(top100f[,c(2,3,4,5,7)])
+      )
+   output$trajplot = renderPlot( {
+      plot(alp$time, exprs(alp)[INI(),], main=INI(), xlab="time", ylab="reported expr.")
+      co = as.numeric(top100f[INI(),2:5])
+      ti = ((0:132)%%66)/66
+      pred = co[1]*sin(2*pi*ti)+co[2]*cos(2*pi*ti)+co[3]*sin(4*pi*ti)+
+            co[4]*cos(4*pi*ti)
+      lines(0:132, pred, lty=2) }
+     )
+   updateSelectizeInput(session, 'orf', choices = rownames(top100), server = TRUE)
+}
+
+shinyApp(ui=ui, server=server)
+```
+
+## Tuning hclust: dendrogram structure
+
+### Distance and fusion method selection
+
+```{r echo = FALSE}
+showHC = function() {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+ 
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="complete"))
+          ),
+  fluidRow(plotOutput("hcl")) 
+ ), server= function(input, output, session) {
+    output$hcl <- renderPlot(
+      plot(hclust( dist(d100, method=input$distmeth),
+           method=input$fusemeth), main=paste0("top 100 osc., dist ",
+             input$distmeth, " aggmeth ", input$fusemeth ))
+      ) } )
+}
+showHC()
+```
+
+## Projection with labels
+
+```{r echo = FALSE}
+showPROJ = function() {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+ 
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="complete")),
+   column(3,  numericInput("numclus", label = "K:", 6, min = 2, max = 9))
+          ),
+  fluidRow(plotOutput("proj")) 
+ ), server= function(input, output, session) {
+    pc = prcomp(d100)$x
+    output$proj <- renderPlot({
+    hc = hclust( dist(d100, method=input$distmeth),
+           method=input$fusemeth )
+    ct = cutree(hc, k=input$numclus)
+    pairs(pc[,1:3], col=ct, pch=19, cex=1.5)
+      }) } )
+}
+showPROJ()
+```
+
+## Characteristic traces, raw expression data
+
+```{r echo = FALSE}
+showTRACE = function() {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(3,  selectInput("distmeth", label = "Distance method:",
+               choices = c("euclidean", "maximum", "manhattan",
+               "binary"), selected = "euclidean")),
+ 
+   column(3,  selectInput("fusemeth", label = "Agglomeration method:",
+               choices = c("complete", "average", "ward.D2", "single",
+                   "median", "centroid"), selected="ward.D2")),
+   column(3,  numericInput("numclus", label = "K:", 5, min = 2, max = 9))
+          ),
+  fluidRow(plotOutput("proj")) 
+ ), server= function(input, output, session) {
+    pc = prcomp(d100)$x
+    output$proj <- renderPlot({
+    if (input$numclus==2) mfr = c(1,2)
+    else if (input$numclus<=4) mfr = c(2,2)
+    else if (input$numclus<=6) mfr = c(2,3)
+    else if (input$numclus<=9) mfr = c(3,3)
+    par(mfrow=mfr, mar=c(3,2,1,1))
+    hc = hclust( dist(d100, method=input$distmeth),
+           method=input$fusemeth )
+sink(tempfile())
+cb <- clusterboot(dist(d100, meth=input$distmeth), clustermethod=hclustCBI, method=input$fusemeth, k=input$numclus, showplots=FALSE, scaling=FALSE) 
+sink(NULL)
+    ct = cutree(hc, k=input$numclus)
+    sdd = split(data.frame(d100), ct)
+    for (i in 1:input$numclus) {
+      matplot(alp$time, t(sdd[[i]]), type="l", ylim=c(-2.5,2.5),
+        xlab="time", ylab="sfe", main=paste0("Cl. ", i, "; n=", nrow(sdd[[i]]),
+ "; mean jacc.=", round(cb$bootmean[i],2)), cex.main=1.5)
+      lines(alp$time, apply(sdd[[i]],2,median), lwd=3)
+      #text(10, -2.3, paste0("n=", nrow(sdd[[i]])), cex=2)
+      }
+      }) } )
+}
+showTRACE()
+```
+
+## Summary on clustering
+
+- Choice of object, representation, and distance: allow flexibility when substantive considerations do not dictate
+- Choice of algorithm: qualitative distinctions exist (single vs complete linkage, for example)
+- "figure of merit" -- Jaccard similarity and silhouette are guides; silhouette is distance-dependent
+- Consider how to validate or corroborate clustering results with TF binding data from the harbChIP package
+- We've not considered divisive methods, self-organizing maps; see Hastie, Tibshirani and Friedman
+
+# Classification concepts
+
+## On classification methods with genomic data
+
+- Vast topic
+- Key resources in R:
+    - Machine Learning [task view](http://cran.r-project.org/web/views/MachineLearning.html) at CRAN
+    - 'metapackage' [mlr](http://cran.r-project.org/web/packages/mlr/index.html)
+- In Bioconductor, consider
+    - The 'StatisticalMethod' task view (next slide)
+    - MLInterfaces (a kind of metapackage)
+
+## BiocViews: StatisticalMethod
+
+```{r statmv,fig=TRUE,echo=FALSE,fig.height=4.6}
+library(png)
+im = readPNG("figures_vjc/statmeth.png")
+grid.raster(im)
+```
+
+## Conceptual basis for methods covered in the talk
+
+- "Two cultures" of statistical analysis (Leo Breiman)
+    - model-based 
+    - algorithmic
+
+- Ideally you will understand and use both
+    - $X \sim N_p(\mu, \Sigma)$, seek and use structure in $\mu$, $\Sigma$ as estimated from data; pursue weakening of model assumptions
+    - $y \approx f(x)$ with response $y$ and features $x$, apply agnostic algorithms to the data to choose $f$ and assess the quality of the prediction/classification
+
+## A method on the boundary: linear discriminant analysis
+
+- The idea is that we can use a linear combination of features to define a score for each object 
+- The value of the score determines the class assignment
+- This assumes that the features are quantitative and are measured consistently for all objects 
+- for $p$-dimensional feature vector $x$ with prior probability $\pi_k$, mean $\mu_k$ for class $k$, and
+common covariance matrix for all classes
+$$
+\delta_k(x) = x^t\Sigma^{-1} \mu_k - \frac{1}{2} \mu_k^t \Sigma^{-1} \mu_k + \log \pi_k
+$$
+is the discriminant function; $x$ is assigned to the class for which $\delta_k(x)$ is largest
+
+## Notes on LDA
+
+- It is "on the boundary" because it can be justified using parametric modeling
+assumptions, assigning to maximize likelihood ratio
+- Algorithmic arguments justify the criterion as it maximizes ratio of between- to within-class variances among all linear combinations of features (Fisher)
+- Further algorithmic arguments lead to variations based on regularization concepts
+
+## Other approaches, issues
+
+- Direct "learning" of statistical parameters in regression or
+neural network models
+- Recursive partitioning of classes, repeating searches through all
+features for optimal discrimination
+- Ensemble methods in which votes are assembled among different learners
+or over perturbations of the data
+- Unifying loss-function framework: see _Elements of statistical learning_ by
+Hastie, Tibshirani and Friedman
+- Figures of merit: misclassification rate (cross-validated), AUROC 
+
+## Application to the tissue-of-origin data
+```{r demo,echo=FALSE}
+suppressPackageStartupMessages({
+suppressWarnings({
+library(MASS)
+library(jsonlite)
+library(BiocGenerics)
+library(hgu133a.db)
+library(hgu95av2.db)
+library(tissuesGeneExpression)
+data(tissuesGeneExpression)
+library(Biobase)
+library(ALL)
+})
+})
+tiss = ExpressionSet(e)
+rownames(tab) = colnames(e)
+pData(tiss) = tab
+tiss = tiss[, tiss$SubType == "normal"]
+omad = order(apply(exprs(tiss),1,mad), decreasing=TRUE)
+tiss = tiss[omad,]
+annotation(tiss) = "hgu133a"
+
+#> select(hgu133a.db, keys=c("ATP2B2", "TIAM1", "ZIC1"),
+#+ keytype="SYMBOL", columns="PROBEID")
+#  SYMBOL     PROBEID
+#1 ATP2B2 204685_s_at
+#2 ATP2B2 211586_s_at
+#3 ATP2B2 216120_s_at
+#4  TIAM1   206409_at
+#5  TIAM1   213135_at
+#6   ZIC1   206373_at
+
+
+planarPlot2 = function (clo, eset, classifLab, ...) 
+{
+    require(RColorBrewer)
+    pal <- brewer.pal("Set2", n = 8)
+    ff <- MLInterfaces:::getGrid(eset)
+    if (clo@learnerSchema@mlFunName %in% c("nnet", "rpart")) 
+        ps <- predict(RObject(clo), newdata = ff, type = "class")
+    else if (clo@learnerSchema@mlFunName %in% c("dlda2"))
+        ps <- MLInterfaces:::predict.dlda2(RObject(clo), newdata = ff)
+    else if (clo@learnerSchema@mlFunName %in% c("ada"))
+        ps <- ada:::predict.ada(RObject(clo), newdata = ff, type="vector")
+    else if (clo@learnerSchema@mlFunName %in% c("lda"))
+        ps <- MASS:::predict.lda(RObject(clo), newdata = ff)
+    else if (clo@learnerSchema@mlFunName %in% c("knn2"))
+        ps <- MLInterfaces:::predict.knn2(RObject(clo), newdata = ff)
+    else if (clo@learnerSchema@mlFunName %in% c("svm2"))
+        ps <- e1071:::predict.svm(RObject(clo), newdata = ff)
+    else if (clo@learnerSchema@mlFunName == "randomForest") {
+        names(ff) <- rownames(exprs(eset))
+        ps <- predict(RObject(clo), newdata = ff)
+    }
+    else ps <- MLInterfaces:::predict(RObject(clo), newdata = ff)
+    if (clo@learnerSchema@mlFunName %in% c("lda", "qda")) 
+        ps <- ps[[1]]
+    plot(ff[, 1], ff[, 2], col = pal[as.numeric(factor(ps))], 
+        pch = 19, xlab = names(ff)[1], ylab = names(ff)[2], ...)
+    legend(min(ff[, 1]) + 0.2, max(ff[, 2]) - 0.5, legend = unique(ps), 
+        col = pal[unique(as.numeric(factor(ps)))], pch = 19, bty="n")
+#    legend(min(ff[, 1]) + 0.2, max(ff[, 2]) - 0.5, legend = unique(ps), 
+#        col = 1, pch = 1)
+}
+
+mlearnWidget = function(eset, infmla) {
+ shinyApp(ui = fluidPage(
+  fluidRow(
+   column(2,  selectInput("learner", label = "Learning method:",
+               choices = c("LDA", "DLDA", "SLDA", "rpart", "randomForest",
+                   "knn1", "nnet(size, decay)", "adaboost"), #, "bagging"),
+               selected = "randomForest")),
+
+   column(2,  selectInput("valmeth", label = "Validation method:",
+               choices = c("random half", "NOTEST", "5-fold xval",
+                   "10-fold xval", "5f xvalFS topvar(.75)"),
+                   selected="NOTEST")),
+   column(2,  numericInput("nfeat", label = "N features (decr. in MAD):", 100, min = 2, max = 10000)),
+   column(2,  numericInput("nnetdecayOrCP", label = "decay/cp", .01, min = .001, max = .5)),
+   column(1,  numericInput("nnetsize", label = "size (nnet)", 3, min = 1, max = 10)),
+   column(2,  numericInput("seed", label = "seed", 31415, min = 100, max = 100000))
+          ),
+#  fluidRow(column(9, textOutput("thecall"))),
+  fluidRow(column(4, textOutput("space")), column(5, textOutput("miscl"))),
+  fluidRow(column(4, htmlOutput("summRob")), column(5, tableOutput("confu"))),
+  fluidRow(column(6, plotOutput("plotz")), column(6, plotOutput("pplot")))
+ ), server= function(input, output, session) {
+   mod = reactive({ 
+     lr = switch( input$learner,
+            "LDA" = ldaI,
+            "DLDA" = dldaI,
+            "SLDA" = sldaI,
+            "rpart" = rpartI,
+            "randomForest" = randomForestI,
+            "knn1" = knnI(),
+            "nnet(size, decay)" = nnetI,
+            "adaboost" = adaI, 
+            "bagging" = baggingI )
+     extras = switch( input$learner,
+            "LDA" = NULL,
+            "DLDA" = NULL,
+            "SLDA" = NULL,
+            "rpart" = list(cp=input$nnetdecayOrCP),
+            "randomForest" = list(importance=TRUE),
+            "knn1" = NULL,
+            "nnet(size, decay)" = list(size=input$nnetsize, decay=input$nnetdecayOrCP, MaxNwts=10000) )
+     xv = switch(input$valmeth, "random half" = sample(1:ncol(eset), size=ceiling(ncol(eset)/2)),
+                      "NOTEST" = xvalSpec("NOTEST"),
+                      "5-fold xval"=xvalSpec("LOG", 5, balKfold.xvspec(5)),
+                      "10-fold xval"=xvalSpec("LOG", 10, balKfold.xvspec(10)),
+                      "5f xvalFS topvar(.75)"=xvalSpec("LOG", 5, balKfold.xvspec(5),
+                             fsFun=fs.topVariance(.75)))
+     list(learner=lr, xvmeth=xv, extras=extras)
+     })
+   nf = reactive({ input$nfeat })
+   output$space = renderText( "RObject excerpt:  " )
+
+totext = function(x) {
+    on.exit({
+        sink(NULL)
+    })
+    tf = tempfile()
+    sink(tf)
+    print(x)
+    hwrite(matrix(readLines(tf), nc=1))
+}
+
+tize = function (x) 
+{
+    on.exit({
+        sink(NULL)
+    })
+    tf = tempfile()
+    sink(tf)
+    #print(x)
+    print(RObject(x))
+    rl = readLines(tf)
+    hwrite(matrix(rl[1:min(10, length(rl))], nc=1), byrow=TRUE)
+#    hwrite("confusion matrix", br=TRUE)
+#    hwrite(RObject(x)$confu)
+#    print(xtable(matrix(readLines(tf), nc=1)), type="html")
+}
+
+   ans = reactive({ 
+     argl = c(list(
+               formula= infmla,
+               data=eset[1:nf(),], .method=mod()$learner, 
+               trainInd=mod()$xv ), mod()$extras )
+     set.seed(input$seed)
+     do.call(MLearn, argl ) })
+   output$summRob = renderText( tize(ans() ) )
+   output$confu = renderTable({ options(digits=3); 
+            if (input$learner == "randomForest") 
+                   return(RObject(ans())$confu)
+            else if (input$valmeth == "NOTEST") 
+                    return(confuMat(ans(), "train"))
+            confuMat(ans())})
+   output$plotz = renderPlot( {
+                   par(las=2, mar=c(4,7,2,2))
+                   if (input$learner == "randomForest" & 
+                         input$valmeth %in% c("NOTEST", "random half"))
+                      plot(getVarImp( ans(), TRUE ), n=10, plat=annotation(eset),
+                            toktype = "SYMBOL" )
+                   else if (input$learner == "rpart" & input$valmeth == "NOTEST") {
+                      par(mfrow=c(1,2))
+                      library(rpart)
+                      plotcp(RObject( ans() ) )
+                      plot(RObject( ans() ) )
+                      text(RObject( ans() ) )
+                      }
+                   #else plot(1,1)
+                   } )
+   output$pplot = renderPlot( {
+          if (nchar(abstract(eset))==0) {
+              et2 = eset[c("204685_s_at", "206409_at"),]
+               argl = c(list(
+               formula= infmla,
+               data=et2, .method=mod()$learner, 
+               trainInd=sample(1:ncol(et2), size=ceiling(ncol(et2)/2) )), mod()$extras )
+             set.seed(input$seed)
+             ans2 = do.call(MLearn, argl ) 
+              rownames(et2) = paste0("X", featureNames(et2))
+              planarPlot2(ans2, et2, "Tissue", main = "TIAM1 vs ATP2B2 (train half)" ) 
+              }
+          else {
+#    PROBEID  SYMBOL
+#1 1007_s_at    DDR1
+#2 1007_s_at MIR4640
+#> AnnotationDbi::select(hgu95av2.db, keys="IFNG", keytype="SYMBOL", columns="PROBEID")
+#  SYMBOL   PROBEID
+#1   IFNG   1021_at
+#2   IFNG 1611_s_at
+#3   IFNG  40702_at
+              et2 = eset[c("1007_s_at", "1021_at"),]
+               argl = c(list(
+               formula= infmla,
+               data=et2, .method=mod()$learner, 
+               trainInd=sample(1:ncol(et2), size=ceiling(ncol(et2)/2)) ), mod()$extras )
+             set.seed(input$seed)
+             ans2 = do.call(MLearn, argl ) 
+              rownames(et2) = paste0("X", featureNames(et2))
+              planarPlot2(ans2, et2, "Tissue", main = "IFNG vs DDR1 (train half)" ) 
+              }
+
+           })
+   output$miscl = renderText({ 
+            if (input$learner == "randomForest" & input$valmeth %in% c("NOTEST", "random half")) {
+                    mat = RObject(ans())$confu
+                    mat = mat[,-ncol(mat)]
+                    }
+            else if (input$valmeth == "NOTEST") {
+                    mat = confuMat(ans(), "train")
+                    }
+            else mat = confuMat(ans())
+            sm = sum(mat)
+            off = sm-sum(diag(mat))
+            paste("est. miscl. rate = ", round(off/sm,3))
+            })
+})}
+suppressPackageStartupMessages({
+library(MLInterfaces)
+})
+mlearnWidget(tiss, infmla=Tissue~.)
+```
+
+## On leukemia data
+
+```{r echo=FALSE}
+data(ALL)
+mlearnWidget(ALL, infmla=mol.biol~.)
+```
+
+## On leukemia data, 2class
+
+```{r echo=FALSE}
+library(hgu95av2.db)
+data(ALL)
+ALL2 = ALL[, which(ALL$mol.biol %in% c("BCR/ABL", "NEG"))]
+ALL2$mol.biol = factor(ALL2$mol.biol)
+mlearnWidget(ALL2, infmla=mol.biol~.)
+```
+
+## Summary
+
+- Numerous principles as well as methods
+- Exploration and sensitivity analysis should be standard practice
+- Poor data quality and experimental design cannot be surmounted by choice of analytic method -- in the following the species and batch effects cannot be distinguished, from Gilad's [reanalysis](http://f1000research.com/articles/4-121/v1) of [Lin et al.](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4260565/), the source
+of the second tissue vs species analysis given above. 
+
+```{r gila,fig=TRUE,echo=FALSE,fig.height=3.6}
+library(png)
+im = readPNG("figures_vjc/giladDesign.png")
+grid.raster(im)
+```

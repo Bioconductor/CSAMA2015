@@ -134,6 +134,14 @@ kable(datatab)
 
 # Getting data from proteomics repositories
 
+## The `rpx` package
+
+> Note: this section requires a working internet connection to query
+> the mass spectrometry data repository and download data files. The
+> following section demonstrate how to use the data package
+> [`PXD000001`](https://bitbucket.org/lgatto/pxd000001) for offline
+> usage.
+
 MS-based proteomics data is disseminated through the
 [ProteomeXchange](http://www.proteomexchange.org/) infrastructure,
 which centrally coordinates submission, storage and dissemination
@@ -176,9 +184,23 @@ retrieve the sixth file, `r pxfiles(px)[6]`. The file is downloaded in
 the working directory and the name of the file is return by the
 function and stored in the `mzf` variable for later use.
 
-```{r, pxget, cache=TRUE}
+```{r, pxget, eval=FALSE}
 mzf <- pxget(px, pxfiles(px)[6])
-mzf
+```
+
+## Offline access
+
+The `PXD000001` package bundles some data files from the corresponding
+ProteomeXchange data set. It contains two functions, `px1files` and
+`px1get`, that mimic the functionality of the `rpx` package: the
+former list the files available in the package and the latter copies
+them in the working directory.
+
+```{r pxd1}
+library("PXD000001")
+px1files()
+mzf <- px1files()[5]
+px1get(mzf)
 ```
 
 # Handling raw MS data
@@ -309,11 +331,18 @@ illustrated below.
 We search the `r mzf` file against the fasta file from `PXD000001`
 using `MSGFplus`.
 
-We first download the fasta files:
+We first download the fasta file, using either the `rpx` package
 
-```{r ex_getfas, cache=TRUE}
+```{r ex_getfas, eval=FALSE}
 fas <- pxget(px, pxfiles(px)[10])
 basename(fas)
+```
+
+or  `PXD000001` to copy the local copies of the fasta files
+
+```{r ex_getfaslocal}
+fas <- px1files()[1]
+px1get(fas)
 ```
 
 ```{r ex_msgfplus, message=FALSE, cache=TRUE}
@@ -559,8 +588,19 @@ formats) and more accessible file format to the wider community. It is
 composed of a key-value metadata section and peptide/protein/small
 molecule tabular sections. 
 
-```{r, mztab, cache=TRUE}
+Instead of downloading the file from the online repository, as shown
+here,
+
+```{r mztab, cache=TRUE, eval = FALSE}
 mztf <- pxget(px, pxfiles(px)[2])
+(mzt <- readMzTabData(mztf, what = "PEP"))
+```
+
+we make use of our offline resource
+
+```{r mztablocal}
+mztf <- px1files()[3]
+px1get(mztf)
 (mzt <- readMzTabData(mztf, what = "PEP"))
 ```
 

@@ -1,10 +1,10 @@
 ---
-title: "Monday Lab: Introduction to _R_ and _Bioconductor_"
+title: "Lab 1.0: Introduction to _R_ and _Bioconductor_"
 output:
   BiocStyle::html_document:
     toc: true
 vignette: >
-  % \VignetteIndexEntry{Monday Lab: Introduction to R and Bioconductor}
+  % \VignetteIndexEntry{Lab 1.0: Introduction to R and Bioconductor}
   % \VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -26,11 +26,15 @@ This lab has four parts. Each part consists of informative material
 followed by short or intermediate length exercises and case
 studies. The material introduces or refreshes your knowledge of _R_,
 and walks through some of the central classes and annotation resources
-for working with high-throughput sequence data in _Bioconductor_. It's
-recommended that you spend about 45 minutes on each of the following
-sections. Take time to work through the code in the material as well
-as the exercises, asking questions of your colleagues and the TAs as
-needed.
+for working with high-throughput sequence data in _Bioconductor_.
+
+It's recommended that you choose two of the following sections, and
+spend about 45 minutes on each. Take time to work through the code in
+the material as well as the exercises, asking questions of your
+colleagues and the TAs as needed. If you're relatively new to _R_,
+then consider doing the first two sections. If you're new to
+_Bioconductor_, then the second and either the third or fourth section
+is recommended.
 
 - [Introduction to _R_](Lab-Monday-Introduction-R.html)
 - [Introduction to _Bioconductor_](Lab-Monday-Introduction-Bioconductor.html)

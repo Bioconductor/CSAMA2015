@@ -1,6 +1,6 @@
 ---
 title: "Interactive data visualization using Shiny"
-subtitle: "Partly based on the [RStudio Shiny tutorial](http://shiny.rstudio.com/tutorial)"
+subtitle: "Based on the [RStudio Shiny tutorial](http://shiny.rstudio.com/tutorial)"
 author: "Andrzej Oleś"
 date: '`r doc_date()`'
 output:
@@ -250,7 +250,7 @@ We have demonstrated how to use the header tag functions, but there are many mor
 names(tags)
 ```
 
-To create a tag, run an element of `tags` as a function. For instance, to create a `div` tag, run:
+To create a tag, run an element of `tags` as a function. For instance, to create a `div` tag, use:
 
 ```{r div, eval=TRUE}
 tags$div()
@@ -386,47 +386,31 @@ shinyUI(fluidPage(
 ))
 ```
 
+<!--
 # Use R scripts and data
 
 We will now show you how to load other scripts and packages to use in your Shiny apps. Our ultimate goal will be building an interactive MA plot explorer. 
+-->
 
 # Interactive MA plot explorer
 
-We will now build an app that creates an interactive MA plot which will allow you to select a gene by clicking on it and displaying a plot counts of the selected gene.
+You will now build a new Shiny app that creates an interactive MA plot. The app will allow you to select a gene by clicking on the MA plot, and will display a counts plot of the selected gene.
+
+This new Shiny app will need its own, new directory. Create a folder in your working directory named `plotMA`. This is where we’ll save the `ui.R` and `server.R` files described below.
 
 ```{r, eval=TRUE, echo=FALSE}
 opts_chunk$set(eval=TRUE)
 ```
 
-We will use the `r Biocpkg("pasilla")` data package contaning per-exon and per-gene read counts of RNA-seq samples of Pasilla knock-down by Brooks et al., Genome Research 2011.
+We will continue with the example from the RNA-seq tutorial. The results of differential expression calling have been saved to the data file `data.rda`. Let's start by loading the data and reproducing the MA plot.
 
-Let's start by loading the data and analyzing differential expression between the treated and untreated samples.
-
-```{r, eval=TRUE, message=FALSE}
-library(pasilla)
+```{r, eval=TRUE, fig.width=5, fig.height=5, message=FALSE}
 library(DESeq2)
-library(Biobase)
-```{r, eval=TRUE}
-data(pasillaGenes)
 
-# DE analysis of the pasilla dataset from Bioconductor
-dds <- DESeqDataSetFromMatrix(counts(pasillaGenes),
-                              pData(pasillaGenes)[,2:3],
-                              ~ condition)
-
-# compare treated vs untreated
-dds$condition <- relevel(dds$condition, "untreated")
-dds <- dds[rowSums(counts(dds)) > 0, ]
-
-# run DESeq
-dds <- DESeq(dds)
+load("data.rda")
 res <- results(dds)
-```
 
-We can now plot the results.
-
-```{r, eval=TRUE, fig.width=5, fig.height=5}
-ymax <- 2.5
+ymax <- 5
 plotMA( res, ylim=c( -ymax, ymax ) )
 ```
 
@@ -434,36 +418,280 @@ plotMA( res, ylim=c( -ymax, ymax ) )
 opts_chunk$set(eval=FALSE)
 ```
 
-For the plot to appear in our Shiny app, we need to ...
+## Displaying R output in Shiny
 
-## Interface layout
+For the MA plot to appear in our Shiny app, we need to:
 
-We would like to display two plots side by side: the MA plot on the left and the counts for the selected gene on the right. We will divide the page into two equally sized parts using `flowLayout`, and set the width and height of the plots to 400 pixels.
+- Add the plot to the user interface definition in `ui.R`.
+- Tell Shiny how to render the plot in `server.R`.
 
-```{r}
+### Step 1: Add an R object to the UI
+
+Shiny provides a family of functions that turn R objects into output for your user interface. Each function creates a specific type of output. 
+
+Output function | creates
+--- | ---
+`htmlOutput` | raw HTML
+`imageOutput` | image
+`plotOutput` | plot
+`tableOutput` |	table
+`textOutput` | text
+`uiOutput` | raw HTML
+
+You can add these output functions to the user-interface in the same way that you added HTML elements and widgets. 
+
+Let's start by adding the MA plot to the user interface using `plotOutput`.
+
+```r
 # ui.R
 
+size = 500
+
 shinyUI(fluidPage(
-  titlePanel("MA-plot + counts plot with shiny"),
+  titlePanel("MA plot explorer"),
 
-  # flow layout fills out left to right then down
-  flowLayout(
+  splitLayout(cellWidths=size,
+    plotOutput("plotma", width=size, height=size)
+  )
+  
+))
 
-    # the MA-plot
-    plotOutput("plotma", click="plotma_click", width=400, height=400),
+```
 
-    # the counts plot for a single gene
-    plotOutput("plotcounts", width=400, height=400),
-    
-    # needed for proper page layout
-    cellArgs = list(style="width: 400px;")    
+Notice that `plotOutput` takes as its first argument the character string `"plotma"`. Each of the `*Output` functions requires a single argument: a character string that Shiny will use as the name of your reactive element. Your users will not see this name, but you will use it later.
+
+We have used `fluidPage` again, but this time we use `splitLayout` to organize the content into cells of width specified by `cellWidths`. We set the width of the cells and the width and height of the plot to the same value given by `size`, which we have set to 500 pixels.
+
+### Step 2: Provide R code to build the plot
+
+Placing a function in `ui.R` tells Shiny where to display your object. Next, you need to tell Shiny how to build the object.
+
+Do this by providing R code that builds the object in `server.R`. The code should go in the unnamed function that appears inside `shinyServer` in your `server.R` script.
+
+The unnamed function plays a special role in the Shiny process; it builds a list-like object named output that contains all of the code needed to update the R objects in your app. Each R object needs to have its own entry in the list.
+
+You can create an entry by defining a new element for output within the unnamed function, like below. The element name should match the name of the reactive element that you created in `ui.R`.
+
+In the script below, `output$plotma` matches `plotOutput("plotma", width=size, height=size)` in your `ui.R` script.
+
+```r
+# server.R
+
+library(DESeq2)
+
+load("data.rda")
+res <- results(dds)
+
+ymax = 5
+
+shinyServer(function(input, output) {
+  
+  # MA-plot
+  output$plotma <- renderPlot({
+    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
+    # MA-plot of all genes
+    plotMA(res, ylim=c( -ymax, ymax ))
+  })
+  
+})
+```
+
+Notice that we have included the code for loading and preprocessing the data just before the call to `shinyServer`. In order that your app finds the data, you need to copy the `data.rda` file to your app's directory. 
+
+The call to `par` before `plotMA` sets some graphical parameters improving some aesthetics of the figure, like `mar` setting the margins, or `cex.*` increasing the text size of the corresponding elements. For more details see `?par`.
+
+Each entry to output should contain the output of one of Shiny’s `render*` functions. These functions capture an R expression and do some light pre-processing on the expression. Use the `render*` function that corresponds to the type of reactive object you are making.
+
+Render function | creates
+--- | ---
+`renderImage` | images (saved as a link to a source file)
+`renderPlot` | plots
+`renderPrint` | any printed output
+`renderTable` | data frame, matrix, other table like structures
+`renderText` |	character strings
+`renderUI` |	a Shiny tag object or HTML
+
+Each `render*` function takes a single argument: an R expression surrounded by braces, `{}`. The expression can be one simple line of text, or it can involve many lines of code, as if it were a complicated function call.
+
+Think of this R expression as a set of instructions that you give Shiny to store for later. Shiny will run the instructions when you first launch your app, and then Shiny will re-run the instructions every time it needs to update your object.
+
+For this to work, your expression should return the object you have in mind (a piece of text, a plot, a data frame, etc). You will get an error if the expression does not return an object, or if it returns the wrong type of object.
+
+## Reactive output using widget values
+
+At this stage, if you run your app, it will just display a static MA plot. We will now extend it by adding a slider widget controlling the significance level for thresholding adjusted p-values. 
+
+First, lets add a slider widget below our plot output:
+
+```r
+# ui.R
+
+size = 500
+
+shinyUI(fluidPage(
+  titlePanel("MA plot explorer"),
+
+  splitLayout(cellWidths=size,
+    plotOutput("plotma", width=size, height=size)
+  ),
+  splitLayout(cellWidths=size,
+    sliderInput("alpha", "Adjusted p-value threshold",
+                min=0, max=0.2, value=0.1, step=0.01, width=size)
   )
   
 ))
 ```
 
-We have used the argument `cellArgs` to ensure the correct size of the layout elements containing the plots. 
+You can make the plot reactive by asking Shiny to call the slider value when it builds the plot. Let’s look at how to do this.
 
-Note the additional `click` argument to the `plotOutput` function of the MA plot. If set to a value like `plotma_click`, the plot will send coordinates to the server whenever it is clicked. This value will be accessible via `input$plotma_click` and will contain a named list with `x` and `y` elements indicating the mouse position.
+Take a look at the first line of code in `server.R`. Do you notice that the unnamed function mentions *two* arguments, `input` and `output`? You already saw that `output` is a list-like object that stores instructions for building the R objects in your app.
 
-We will use the `input$plotma_click` coordinates to resolve the nearest gene in the MA plot.
+`input` is a second list-like object. It stores the current values of all of the widgets in your app. These values will be saved under the names that you gave the widgets in `ui.R`.
+
+So for example, our app has one widget named `"alpha"`, whose value will be saved in `input` as `input$alpha`. Shiny will automatically make an object reactive if the object uses an `input` value. In order to use the user-controlled value `input$alpha` to create a reactive MA plot, substitute in your `server.R` script the line containing the call to `plotMA` by the following one:
+
+```r
+plotMA(res, ylim=c( -ymax, ymax ), alpha=input$alpha)
+```
+
+When you are ready updating your `ui.R` and `server.R` files, launch your Shiny app. You plot should redraw instantly as you move the slider.
+
+Shiny tracks which outputs depend on which widgets. When a user changes a widget, Shiny will rebuild all of the outputs that depend on the widget, using the new value of the widget as it goes. As a result, the rebuilt objects will be completely up-to-date.
+
+This is how you create reactivity with Shiny, by connecting the values of `input` to the objects in `output`. Shiny takes care of all of the other details.
+
+## Reactivity
+
+Finally, we will make the MA plot clickable allowing to select a gene, and add the counts plot for the selected gene. 
+
+We start by adding to the interface layout the `plotOutput` function for the counts plot, so that the `ui.R` script matches the following:
+
+```{r}
+# ui.R
+
+size = 500
+
+shinyUI(fluidPage(
+  titlePanel("MA plot explorer"),
+
+  splitLayout(cellWidths=size,
+    plotOutput("plotma", click="plotma_click", width=size, height=size),
+    plotOutput("plotcounts", width=size, height=size)
+  ),
+  splitLayout(cellWidths=size,
+    sliderInput("alpha", "Alpha", min=0, max=0.2, value=0.1, step=0.01, width=size)
+  )
+  
+))
+```
+
+Notice the additional `click` argument to the `plotOutput` function of the MA plot. If set to a value like `plotma_click`, the plot will send coordinates to the server whenever it is clicked. This value will be accessible via `input$plotma_click` and will contain a named list with `x` and `y` elements indicating the mouse position. We will use the `input$plotma_click` coordinates to resolve the nearest gene in the MA plot.
+
+Let's get back to our `server.R` script. In order to be able to resolve which point in the MA plot was closest to the click we will create the `t.data.scaled` object containing points normalized coordinates.
+
+```r
+library(DESeq2)
+
+load("data.rda")
+res <- results(dds)
+
+ymax <- 5
+
+# this object will be used to locate points from click events.
+data <- with(res, cbind(baseMean, log2FoldChange))
+data[,2] <- pmin(ymax, pmax(-ymax, data[,2]))
+scale <- c(diff(range(data[,1])), 2*ymax)
+t.data.scaled <- t(data)/scale
+
+shinyServer(function(input, output) {
+  
+  current = reactiveValues(idx = NULL)
+  
+  xy = reactive(c(input$plotma_click$x, input$plotma_click$y))
+  
+  observe({
+    if (!is.null(xy())) {
+      ## find index of the closest point
+      sqdists <- colMeans( (t.data.scaled - xy()/scale )^2 ) 
+      current$idx <- which.min(sqdists)  
+    }
+  })
+  
+  # MA-plot
+  output$plotma <- renderPlot({
+    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
+    # MA-plot of all genes
+    plotMA(res, ylim=c( -ymax, ymax ), alpha=input$alpha)
+    # add circle for the selected point
+    idx = current$idx
+    if (!is.null(idx)) points( data[idx,1], data[idx,2], col="dodgerblue", cex=3, lwd=3 )
+  })
+
+  # counts plot
+  output$plotcounts <- renderPlot({
+    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
+    # plot the counts for the selected gene
+    # update only when idx changes
+    idx = current$idx
+    if (!is.null(idx)) plotCounts( dds, idx, intgroup=c("dex") )
+  })
+  
+})
+```
+
+Apart from the updated `renderPlot` functions responsible for plotting, there are some other important additions to the Shiny app. Namely, we have used a `reactiveValues`, a `reactive` expression, and an `observer` to streamline our app.
+
+### Reactive values
+
+Reactive values contain values which can change over time, and which can be read by other reactive objects. For istance, the `input` object is a `reactiveValues` object, which looks something like a list, and it contains many individual reactive values.
+
+When you read a value from a `reactiveValues` object, the calling reactive expression takes a reactive dependency on that value, and when you write to it, it notifies any reactive functions that depend on that value.
+
+We define our the reactive value `current$idx` to hold the index of the currently highlighted gene. It's value is set in the `observer` described below, and both plots depend on it.
+
+### Reactive expressions
+
+Conceptually, a reactive expression is an R expression whose result will change over time. They can read reactive values, e.g. widget inputs, and call other reactive expressions. The reactive expression will update its value whenever the original widget changes.
+
+To create a reactive expression use the `reactive` function, which takes an R expression, just like the `render*` functions.
+
+In our example we create an `xy` reactive expression containg the click coordinates.
+
+```r
+xy = reactive(c(input$plotma_click$x, input$plotma_click$y))
+```
+
+The above expression returns a vector of two numbers. You can use it to access the click coordinates in other parts of your app by calling `xy()`. For example, we use it the observer to resolve the gene closest to the click.
+
+```r
+observe({
+  if (!is.null(xy())) {
+    ## find index of the closest point
+    sqdists <- colMeans( (t.data.scaled - xy()/scale )^2 ) 
+    current$idx <- which.min(sqdists)  
+  }
+})
+```
+
+Reactive expressions are a bit smarter than regular R functions. They cache their values and know when their values have become outdated. What does this mean? The first time that you run a reactive expression, the expression will save its result in your computer’s memory. The next time you call the reactive expression, it can return this saved result without doing any computation (which will make your app faster).
+
+The reactive expression will only return the saved result if it knows that the result is up-to-date. If the reactive expression has learned that the result is obsolete (because a widget has changed), the expression will recalculate the result. It then returns the new result and saves a new copy. The reactive expression will use this new copy until it too becomes out of date.
+
+### Observers
+
+Observers are similar to reactive expressions, but with a few important differences. Like reactive expressions, they can access reactive values and reactive expressions. However, they do not return any values, and therefore are only useful for their side effects. 
+
+The observer above is used to update the `current$idx` value only when the value of `xy()` changes to a non-null value, which corresponds to the user clicking the plot.
+
+## Dependencies
+
+What happens if you click on the MA plot?
+
+This will make both plots drawn by `renderPlot` out of date, even though they don't depend directly on neither `input$plotma_click`, nor `xy()`. Shiny will know that they became outdated and will redraw the plots because it keeps track of which reactive expressions or values an output object depends on. Shiny will automatically re-build an object if
+
+- an reactive/input value in the objects’s `render*` function changes, or
+- a reactive expression in the objects’s `render*` function becomes obsolete.
+
+Think of reactive expressions as links in a chain that connect input values to output objects. The objects in output will respond to changes made anywhere downstream in the chain. (You can fashion a long chain because reactive expressions can call other reactive expressions).
+
+

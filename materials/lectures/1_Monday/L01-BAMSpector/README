@@ -1,0 +1,17 @@
+This folder contains a simple 'shiny' app for visualizing aligned reads
+in the context of known gene models. The R code is pretty compact, using
+functions from Gviz and 'under the hood' the genomic ranges infrastructure
+mentioned in the lecture
+
+It requries several packages, installed with
+
+  biocLite(c('RNAseqData.HNRNPC.bam.chr14', 'Homo.sapiens', 'shiny', 'Gviz'))
+
+Then, start R and use `setwd()` to set to the working directory to the
+directory containing the 'ui.R' and 'server.R' scripts. Run the app with
+
+  shiny::runApp()
+
+For more on writing shiny applications, see
+
+  http://shiny.rstudio.com/tutorial/

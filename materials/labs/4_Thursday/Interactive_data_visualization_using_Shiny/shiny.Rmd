@@ -108,7 +108,7 @@ library(shiny)
 runApp("my_app")
 ```
 
-Note: The first argument of `runApp` is the filepath from your working directory to the app’s directory. The code above assumes that the app directory is in your working directory. In this case, the filepath is just the name of the directory.
+Note: The first argument of `runApp` is the file path from your working directory to the app’s directory. The code above assumes that the app directory is in your working directory. In this case, the file path is just the name of the directory.
 
 In case you are wondering, the **Hello Shiny** app’s files are saved in a special system directory designed to work with the `runExample` call. Alternatively, you can also launch the app using
 
@@ -118,7 +118,7 @@ runApp(system.file(package="shiny", "examples", "01_hello"))
 
 ## Your turn
 
-Create your first Shiny app named `MyApp`. For this, start RStudio and from the **File** menu choose *New Project... > New Directory > Shiny Web Application*. As the directory name enter the desired name `MyApp`. The project will start with `ui.R` and `server.R` containing the familar code from the **Hello Shiny** app. 
+Create your first Shiny app named `MyApp`. For this, start RStudio and from the **File** menu choose *New Project... > New Directory > Shiny Web Application*. As the directory name enter the desired name `MyApp`. The project will start with `ui.R` and `server.R` containing the familiar code from the **Hello Shiny** app. 
 
 To launch your app execute `runApp("MyApp")` in your R console. Alternatively, you can click the Run App button (at the top of the editor), or or use the keyboard shortcut: `Command+Shift+Enter` on MAC, or `Control+Shift+Enter` on Windows.
 
@@ -165,7 +165,7 @@ This code is the bare minimum needed to create a Shiny app. The result is an emp
 
 Shiny `ui.R` scripts use the function `fluidPage` to create a display that automatically adjusts to the dimensions of your user’s browser window. You lay out your app by placing elements in the `fluidPage` function.
 
-For example, the `ui.R` script below creates a user-interface that has a title panel and then a sidebar layout, which includes a sidebar panel and a main panel. Note that these elements are placed within the fluidPage function.
+For example, the `ui.R` script below creates a user-interface that has a title panel and then a sidebar layout, which includes a sidebar panel and a main panel. Note that these elements are placed within the `fluidPage` function.
 
 ```{r}
 # ui.R
@@ -266,7 +266,7 @@ Now that you know how to create the layout of the user interface, it's time to a
 
 Shiny widgets collect a value from the user. When the user changes the widget, the value will change as well.
 
-Shiny comes with a family of pre-built widgets, each created with a transparently named R function. For example, Shiny provides a function namessliderInput that creates a slider bar.
+Shiny comes with a family of pre-built widgets, each created with a transparently named R function. For example, Shiny provides a function `sliderInput` that creates a slider bar.
 
 The standard Shiny widgets are:
 
@@ -386,12 +386,6 @@ shinyUI(fluidPage(
 ))
 ```
 
-<!--
-# Use R scripts and data
-
-We will now show you how to load other scripts and packages to use in your Shiny apps. Our ultimate goal will be building an interactive MA plot explorer. 
--->
-
 # Interactive MA plot explorer
 
 You will now build a new Shiny app that creates an interactive MA plot. The app will allow you to select a gene by clicking on the MA plot, and will display a counts plot of the selected gene.
@@ -500,7 +494,7 @@ Notice that we have included the code for loading and preprocessing the data jus
 
 The call to `par` before `plotMA` sets some graphical parameters improving some aesthetics of the figure, like `mar` setting the margins, or `cex.*` increasing the text size of the corresponding elements. For more details see `?par`.
 
-Each entry to output should contain the output of one of Shiny’s `render*` functions. These functions capture an R expression and do some light pre-processing on the expression. Use the `render*` function that corresponds to the type of reactive object you are making.
+Each entry to output should contain the output of one of Shiny’s `render*` functions. These functions capture an R expression and do some light preprocessing on the expression. Use the `render*` function that corresponds to the type of reactive object you are making.
 
 Render function | creates
 --- | ---
@@ -643,7 +637,7 @@ Apart from the updated `renderPlot` functions responsible for plotting, there ar
 
 ### Reactive values
 
-Reactive values contain values which can change over time, and which can be read by other reactive objects. For istance, the `input` object is a `reactiveValues` object, which looks something like a list, and it contains many individual reactive values.
+Reactive values contain values which can change over time, and which can be read by other reactive objects. For instance, the `input` object is a `reactiveValues` object, which looks something like a list, and it contains many individual reactive values.
 
 When you read a value from a `reactiveValues` object, the calling reactive expression takes a reactive dependency on that value, and when you write to it, it notifies any reactive functions that depend on that value.
 
@@ -655,7 +649,7 @@ Conceptually, a reactive expression is an R expression whose result will change 
 
 To create a reactive expression use the `reactive` function, which takes an R expression, just like the `render*` functions.
 
-In our example we create an `xy` reactive expression containg the click coordinates.
+In our example we create an `xy` reactive expression containing the click coordinates.
 
 ```r
 xy = reactive(c(input$plotma_click$x, input$plotma_click$y))
@@ -689,8 +683,8 @@ What happens if you click on the MA plot?
 
 This will make both plots drawn by `renderPlot` out of date, even though they don't depend directly on neither `input$plotma_click`, nor `xy()`. Shiny will know that they became outdated and will redraw the plots because it keeps track of which reactive expressions or values an output object depends on. Shiny will automatically re-build an object if
 
-- an reactive/input value in the objects’s `render*` function changes, or
-- a reactive expression in the objects’s `render*` function becomes obsolete.
+- an reactive/input value in the object’s `render*` function changes, or
+- a reactive expression in the object’s `render*` function becomes obsolete.
 
 Think of reactive expressions as links in a chain that connect input values to output objects. The objects in output will respond to changes made anywhere downstream in the chain. (You can fashion a long chain because reactive expressions can call other reactive expressions).
 

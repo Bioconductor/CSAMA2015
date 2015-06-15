@@ -489,8 +489,8 @@ brfss <- read.csv(fname)
     sp + geom_point() + stat_smooth(method=lm, se=FALSE)
     ```
 
-6. How do you fit a linear regression line for each group? First we’ll
-   make the base plot object sps, then we’ll add the linear regression
+6. How do you fit a linear regression line for each group? First we'll
+   make the base plot object sps, then we'll add the linear regression
    lines to it.
 
     ```{r ggplot2-regression-bygroup}

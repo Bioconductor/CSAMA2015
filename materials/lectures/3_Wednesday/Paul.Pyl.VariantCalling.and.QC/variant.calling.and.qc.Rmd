@@ -35,6 +35,16 @@ T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
 <div style="width: 70%; margin: auto;">
 ![cohortTally][cohortTally]
 </div>
+
+## Variant-Calling Software
+- [The Genome Analysis Toolkit](https://www.broadinstitute.org/gatk/)
+- [Samtools](http://www.htslib.org/doc/samtools-1.2.html)
+- Bioconductor Packages:
+    - [VariantTools](http://bioconductor.org/packages/release/bioc/html/VariantTools.html)
+    - [h5vc](http://bioconductor.org/packages/release/bioc/html/h5vc.html)
+
+![h5vc][h5vc]
+
 ## Certainty and Sequencing Depth
 In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
 
@@ -236,3 +246,4 @@ print(pll)
 [nice]: Illustrations/nice.tiff "A Good Variant"
 [notSoNice]: Illustrations/not.so.nice.tiff "A Bad Variant"
 [horrible]: Illustrations/patently.horrible.png "A Very Bad Variant"
+[h5vc]: Illustrations/h5vc.png "The h5vc Paper"

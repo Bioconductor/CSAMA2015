@@ -1,0 +1,1711 @@
+% To compile this:
+% rm(list=ls()); library('knitr'); pat_md(); knit('rgraphics.Rtex'); options(prompt="> ");
+
+% xkcd font located here: download.file("http://simonsoftware.se/other/xkcd.ttf", dest="xkcd.ttf", mode="wb")
+% move into any directory in font.paths() and also run 
+%  library("sysfonts"); library("extrafont")
+%  font.add(family="xkcd", regular = "xkcd.ttf")       
+%  font_import(pattern = "[X/x]kcd", prompt=FALSE)
+
+
+```{r initialize, echo=FALSE, include=FALSE}
+eval(parse(text = grep("^library", readLines("rgraphics.Rtex"), value=TRUE))) 
+library("knitr")
+opts_chunk$set(tidy = FALSE, cache = TRUE, autodep = TRUE, 
+    fig.show = "hide", fig.width = 4, fig.height = 4.5, dev = "pdf", 
+    message = FALSE, error = FALSE, warning = FALSE, fig.align = "center", dpi=360)
+options(digits=3, width=55, prompt=" ", continue=" ")
+```
+%$
+
+% ----To do------
+
+% \begin{itemize}
+% \item along chromosome data (ggbio)
+% \item Scan this lab for exercises to include in the chapter: 
+% \url{https://web.stanford.edu/class/bios221/labs/graphics/lab_2_graphics.html}
+% \end{itemize}
+
+% Not neeeded - Susan says these are now covered elsewhere:
+% \begin{itemize}
+% \item Mosaic plots / \CRANpkg{vcd} for contingency tables (e.g. hair colour data?)
+% \item Plotting residuals / goodness of fit - in a regression chapter: QQ plot; are the residuals independent?  
+%   plot them against various potential covariates. Also for contingency tables (see below).
+% \item rootogram for continuous \& discrete data -- see also: Christian Kleiber, 
+%   Achim Zeileis (2014). Visualizing Count Data Regressions Using Rootograms. Working Paper 2014-20, 
+% \end{itemize}
+
+
+\setcounter{chapter}{3}
+\chapter{High Quality Graphics in R}
+
+```{r introplot, echo=FALSE, fig.width=4, fig.height=4}
+library("xkcd")
+library("showtext")
+library("sysfonts")
+library("dplyr")
+introplotdata <- c(seq(-8, 1, length=25)^2, rep(1, 5), seq(1, 5,length=25)^2)
+xrange  <- range(1:55)
+yrange  <- range(introplotdata)
+ratioxy <- diff(xrange) / diff(yrange)
+ratioxy <- .1
+mapping <- aes(x = x,
+               y = y,
+               scale = scale,
+               ratioxy = ratioxy,
+               angleofspine = angleofspine,
+               anglerighthumerus = anglerighthumerus,
+               anglelefthumerus = anglelefthumerus,
+               anglerightradius = anglerightradius,
+               angleleftradius = angleleftradius,
+               anglerightleg =  anglerightleg,
+               angleleftleg = angleleftleg,
+               angleofneck = angleofneck)
+dataman <- data.frame( x= c(30), y=c(400),
+                  scale = c(100),
+                  ratioxy = ratioxy,
+                  angleofspine =  - pi / 2 ,
+                  anglerighthumerus = -pi/6,
+                  anglelefthumerus = pi + pi/6,
+                  anglerightradius = 0,
+                  angleleftradius = 0,
+                  angleleftleg = 3*pi/2  + pi / 12 ,
+                  anglerightleg = 3*pi/2  - pi / 12,
+                  angleofneck = 3 * pi / 2 - pi/10)
+ggplot() + geom_line(aes(x=1:55, y=introplotdata^2), size=2) + 
+   xkcdaxis(c(0, 50), c(0, 1000)) + xlab("Time to make plot (minutes)") + 
+   ylab("Time to understand plot (minutes)") + xkcdman(mapping, dataman)
+```
+
+\begin{marginfigure}[-3cm]
+\includegraphics[width=\linewidth]{r_introplot-1}
+\caption{An elementary law of visualisation.}
+\label{rgraphics:fig:introfig}
+\end{marginfigure}
+
+There are two important types of data visualization. The first enables a scientist to
+effectively explore the data and make discoveries about the complex processes at work. The
+other type of visualization should be a clear and informative illustration of the study's
+results that she can show to others and eventually include in the final publication.
+
+Both of these types of graphics can be made with plotting functions in R. In fact, R offers different approaches
+for making graphics, each with their its advantages and limitations.
+\fixme{Review this when chapter is finished:} base R graphics were historically first, simple and procedural.
+Complex plots can quickly get messy to program.
+A more high-level approach -- \emph{grammar of graphics}, plots are built in modular pieces, so that we
+can easily try different visualization types for our data in an intuitive and easily
+deciphered way, like we can switch in and out parts of a sentence in human language. 
+\emph{lattice graphics} -- for showing more than 2 variables at a time, with lattice graphics, we can attempt
+visualisation of data to up to 4 or 5 dimensions.
+In the end of the chapter, we cover some specialized forms of
+plotting such as maps and ideograms, still building on the base concept of the grammar of
+graphics.
+
+%--------------------------------------------------
+\section{Goals for this chapter}
+%--------------------------------------------------
+\begin{itemize}
+\item Review the basics of \Rpackage{base} R plotting
+\item Understand the logic behind the \emph{grammar of graphics} concept
+\item Introduce \CRANpkg{ggplot2}'s \Rfunction{qplot} function
+\item Show how to build complex plots from the ground up using \CRANpkg{ggplot2}'s
+  \Rfunction{ggplot} function
+\item See how to plot 1D, 2D, 3-5D data, and understand faceting 
+\item Become good at rapidly exploring data sets by visualization
+\item Create beautiful and intuitive plots for scientific presentations and publications
+ \end{itemize}
+
+%--------------------------------------------------
+\section{Built-in R Plotting}
+%--------------------------------------------------
+R has built-in plotting functions that can be used to
+quickly and easily visualize data.
+
+\begin{marginfigure}[-2cm]
+\includegraphics[width=\linewidth]{r_basicplotting1-1}
+\caption{Plot of concentration vs.\ density for an ELISA assay of DNase.}
+\label{rgraphics:fig:basicplotting1}
+\end{marginfigure}
+%
+The most basic of these is the \Rfunction{plot} function. In
+Figure~\ref{rgraphics:fig:basicplotting1} it is used to show data from an enzyme-linked
+immunosorbent assay (ELIZA) assay. An ELIZA assay uses antibodies and the resulting colour
+change created by them to identify an enzyme and quantify its activity, in this case the
+enzyme deoxyribonuclease (DNase), which degrades DNA. The data are assembled in the R
+object \Robject{DNase}, which conveniently comes with base R. 
+\Robject{DNase} is a dataframe whose columns are \Robject{Run}, the assay run;
+\Robject{conc}, the protein concentration that was used; and \Robject{density}, the
+measured optical density.
+%
+```{r basicplotting1}
+head(DNase)
+plot(DNase$conc, DNase$density) 
+```
+%
+\begin{marginfigure}[-30mm]
+\includegraphics[width=\linewidth]{r_basicplotting2-1}
+\caption{Same data as in Figure~\ref{rgraphics:fig:basicplotting1} but with better axis labels and a different plot symbol.}
+\label{rgraphics:fig:basicplotting2}
+\end{marginfigure}
+%
+This basic plot can be customized, for example by changing the plotting symbol and axis labels 
+as shown in Figure~\ref{rgraphics:fig:basicplotting2} by using the parameters \Robject{xlab}, \Robject{ylab} 
+and \Robject{pch} (plot character). The information about the labels is stored in the 
+object \Robject{DNAse}, and we can access it with the \Rfunction{attr} function.
+%
+```{r basicplotting2}
+plot(DNase$conc, DNase$density,
+ylab = attr(DNase, "labels")$y, 
+xlab = paste(attr(DNase, "labels")$x, attr(DNase, "units")$x), 
+pch = 3, col = "blue")
+```
+%$
+Besides scatterplots, we can also use built-in functions to create 
+histograms and boxplots (Figure~\ref{rgraphics:fig:basicplotting3}). 
+%
+```{r basicplotting3, fig.width=3, fig.height=3}
+hist(DNase$density, breaks=25, main = "")
+```
+%$
+```{r basicplotting4, fig.width=5.6, fig.height=3.5}
+boxplot(density ~ Run, data = DNase)
+```
+%
+Boxplots are convenient to show multiple distributions next to each other in a compact space,
+and they are universally preferable to the barplots with error bars often seen in biological papers. 
+We will see more about plotting univariate distributions in Section~\ref{rgraphics:sec:univar}.
+
+These plotting functions are great for quick interactive exploration of data; but we
+run quickly into their limitations if we want to create more sophisticated displays of data.
+In this chapter, we are going use a visualization framework 
+called the grammar of graphics, implemented in the package \CRANpkg{ggplot2}, that enables step by step 
+construction of high quality graphics in a logical and elegant manner. But first let us load up 
+an example dataset.
+
+\begin{marginfigure}[+0mm]
+\includegraphics[width=\linewidth]{r_basicplotting3-1}\\
+\includegraphics[width=\linewidth]{r_basicplotting4-1}
+\caption{Histogram of the density from the ELISA assay, and boxplots of these values 
+stratified by the assay run. The boxes are ordered along the axis in lexicographical order because 
+the runs were stored as text strings. We could use R's type conversion functions to achieve numerical ordering.}
+\label{rgraphics:fig:basicplotting3}
+\end{marginfigure}
+
+
+%--------------------------------------------------
+\section{An Example Dataset}
+\label{rgraphics:sec:exampledata}
+%--------------------------------------------------
+To properly testdrive the \CRANpkg{ggplot2} functionality, we are going to need a data set
+that is big enough and has some complexity so that it can be sliced and viewed from many
+different angles. 
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{Yusukecells}
+\caption{Single-section immunofluorescence image of the E3.5 mouse blastocyst stained for Serpinh1, 
+a marker of primitive endoderm (blue), Gata6 (red) and Nanog (green).
+Scale bar: 10 $\mu$m. \fixme{need to get a similar (and perhaps even better) image from Takashi; 
+this one is from the NCB paper.}\label{rgraphics:fig:cells}}
+\end{marginfigure}
+
+We'll use a gene expression microarray data set that reports the transcriptomes
+of around 100 individual cells from mouse embryos at different time points in early development.
+The mammalian embryo starts out as a single cell, the fertilized egg.
+Through synchronized waves of cell divisions, the egg multiplies into a clump of cells that at first 
+show no discernible differences between them. At some point, though, cells choose different lineages.
+Eventually, by further and further specification, the different cell types and tissues arise that 
+are needed for a full organism. The aim of the experiment\cite{Ohnishi2014} was to see how and when
+the first \fixme{second?} of these \emph{symmetry breaking} events occurs. We'll further explain the data as we go,
+more details can be found in the paper and in the documentation of the Bioconductor data package 
+\Biocexptpkg{Hiiragi2013}. We first load the package and the data: 
+%
+```{r loadHiiragi}
+library("Hiiragi2013")
+data("x")
+dim(exprs(x))
+```
+```{r checkHiiragi, echo=FALSE}
+stopifnot(packageDescription("Hiiragi2013")$Version >=  package_version("1.3.2"), # currently in Bioc-Devel
+          "sampleGroup" %in% colnames(pData(x)))
+
+```
+%$
+You can print out a more detailed summary of the \Rclass{`r class(x)`} object \Robject{x}
+by just typing \Robject{x} at the R prompt.  The `r ncol(x)` columns of the data matrix 
+(accessed above through the \Rfunction{exprs} function) 
+correspond to the samples (and each of these to a single cell), the `r nrow(x)` rows correspond to the genes
+probed by the array, an Affymetrix \emph{`r annotation(x)`} array.  The data were
+normalized using the RMA method\cite{Irizarry:Biostat:2003}. The raw data are also available in the
+package (data object \Robject{a}), and at EMBL-EBI's ArrayExpress database under the
+accession code E-MTAB-1681.
+
+Let's have a look what informations is available about the samples\footnote{The 
+notation \`r pData(x)[1, "sampleColour"]` is a hexadecimal representation of the RGB coordinates 
+of a colour; more on this in Section~\ref{rgraphics:sec:colorspaces}.}.
+% Note, the \'r ...' is perhaps a bit brittle, it assumes that the R code evaluates to a string 
+% that begins with `#`, which unescaped would be a problem for LaTeX
+%
+```{r xpData}
+head(pData(x), 1)
+```
+%
+The information provided is a mix of information about the cells (i.e., the age, size and
+genotype of the embryo from which they were obtained) and technical information (scan
+date, raw data file name). Moreover, in the paper the authors divided the cells into 
+`r length(unique(x$sampleGroup))` %$
+biological groups (\Robject{sampleGroup}), based on age,
+genotype and lineage, and they defined a colour scheme to represent these groups
+(\Robject{sampleColour})\footnote{In this chapter we'll use the spelling
+  \emph{colour} (rather than \emph{color}). This is to stay consistent with the spelling
+  adopted by the R package \CRANpkg{ggplot2}, which we'll use a lot. Other packages, like
+  \CRANpkg{RColorBrewer}, use the other spelling. In some cases, function or argument
+  names are duplicated to allow users to use either choice, although you cannot rely on that.}.
+%
+```{r groupSize} 
+groupSize <- table(x$sampleGroup) 
+groupSize
+``` 
+%$
+By convention, time in the development of the mouse embryo is measured in days, and
+reported as, for instance, \texttt{E3.5}.  The cells in the groups whose name contains
+\texttt{FGF4-KO} are from embryos in which the FGF4 gene, an important
+regulator of cell differentiation, was knocked out.  Starting from E3.5, the wildtype cells (without
+the FGF4 knock-out) differentiate into different cell lineages, called pluripotent epiblast
+(EPI) and primitive endoderm (PE),
+
+%------------------------------------------------------------
+\section{ggplot2}
+\label{rgraphics:sec:ggplot}
+%------------------------------------------------------------
+
+The \CRANpkg{ggplot2} package is a package created by Hadley Wickham that implements the
+idea of \emph{grammar of graphics} -- a concept created by Leland Wilkinson in his
+eponymous book\cite{GrofGrbook}. Comprehensive documentation for the
+package\cite{ggplot2} can be found \href{http://ggplot2.org}{on its website}.  The
+online documentation includes great example use cases for each of the graphic types that
+are introduced in this chapter (and many more) and is an invaluable resource when creating
+figures.
+
+To load the package we run: 
+%
+```{r ggplot2intro2}
+library("ggplot2")
+```
+%
+We start by plotting the number of samples for each of the 
+`r length(unique(x$sampleGroup))` %$
+groups using \CRANpkg{ggplot2}'s \Rfunction{qplot} function
+in Figure~\ref{rgraphics:fig:qplot1}. Using this function is similar to using the R's
+built-in \Rfunction{plot} function -- but it can be combined with the techniques we learn
+in this chapter to create striking plots.
+%
+```{r figqplot1, fig.width=5, fig.height=4}
+qplot(x = names(groupSize), 
+      y = as.vector(groupSize),
+      geom = "bar", stat = "identity")
+```
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_figqplot1-1}
+\caption{Making our first \CRANpkg{ggplot2} figure using \Rfunction{qplot}. }
+\label{rgraphics:fig:qplot1}
+\end{marginfigure}
+
+We just wrote our first "sentence" using the grammar of graphics. We specified the
+\emph{data} via the arguments \Robject{x} and \Robject{y}; we specified that we want each
+data item to be represented by bars -- a type of \emph{geometric object} (other possible
+geometric objects include point and lines, we will see these later). And finally we set the
+\Robject{stat} parameter to "identity" to indicate that we want to see the data as is; the
+name of this parameter is short for \emph{statistic}, which is what we call any
+function of data. The identity statistic is trivial as it just returns the data
+themselves, but there are other more interesting statistics, such as binning, smoothing,
+averaging, or other operations that summarize the data in some way. These concepts --data,
+geometrical objects, statistics-- are some of the ingredients of the grammar of graphics,
+just as nouns, verbs and adverbs are ingredients of an English sentence.
+
+The resulting plot, Figure~\ref{rgraphics:fig:qplot1}, is not bad, but there are several
+potential improvements. Instead of R expressions for axis labels, we would like to use
+more descriptive English expressions. And we may want to colour the bars to help us quickly
+see which one corresponds to which group. This might be particularly useful if we use the
+same colours for the same message in several plots. To solve these problems, let us first
+reconstruct the colour scheme used in \Robject{pData(x)}; we rely on the fact that all the
+samples from the same group were assigned the same colour.
+%
+```{r groupColour}
+groupColour <- vapply(split(x$sampleColour, x$sampleGroup), 
+     FUN = unique, FUN.VALUE = "")
+groupColour
+```
+%
+Now we can add a \Robject{fill} parameter and descriptive axis labels, as in
+Figure~\ref{rgraphics:fig:qplot2}:
+%  
+```{r figqplot2, fig.width=5, fig.height=4}
+qplot(x = names(groupSize),
+      y = as.vector(groupSize),
+      geom = "bar", stat = "identity",
+      xlab = "Groups", ylab = "Number of Samples", 
+      fill = names(groupSize)) + 
+   scale_fill_manual(values = groupColour, name="Colour code")
+```
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_figqplot2-1}
+\caption{Similar to Figure~\ref{rgraphics:fig:qplot1}, but with coloured bars and 
+better axis descriptions.\label{rgraphics:fig:qplot2}}
+\end{marginfigure}
+
+Let's dissect the above "sentence". The added axis labels are straightforward
+(\Rfunction{xlab}, \Rfunction{ylab}). Then we stated that we want the bars to be coloured
+(filled) based on \Robject{names(groupSize)} (which in this case co-incidentally also is
+the \Robject{x} data, but that need not be so). But then we didn't just
+want \CRANpkg{ggplot2} to use the default colours, but provide our own mapping from group
+names to colours. How did we do this? In this case, not by adding an additional parameter
+to the \Rfunction{qplot} function, but by using the \Rfunction{+} operator and "adding" to
+the graphics object returned by \Rfunction{qplot} the information about our prefered colour
+assignment. This information is encapsulated by the object returned by the
+\Rfunction{scale\_fill\_manual} function, and comprises the names-to-colour mapping
+(as a named vector) and a title.
+
+This object-oriented way of doing things --taking a graphics object already produced in
+some way and then further refining it-- can be more convenient and easy to manage then
+what normally is the alternative --providing all the instructions needed upfront, 
+to the single function that creates the graphic. We can quickly try out different
+visualisation ideas without having to rebuild our plots each time from scratch, but rather
+store the basic object and then modify it in different ways.\footnote{The \Rfunction{+}
+operator plays well with R's preference for pass-by-value semantics, where you normally
+don't modify an object in place, but rather, every function call on an object treats its
+inputs as read-only, although it might return a modified version of its input. In R, the
+\Rfunction{+} operator is also just such a function, which takes two arguments (the
+expressions to its left and right) and returns a single result.}
+
+As you can see from our colour legend, we have chosen our colours well so that, for example,
+the mutant genotypes have more firey colours (orange, red), the PE lineage samples have a
+greenish colour and the EPI ones a blueish colour. In this way, we can easily look for
+trends in our data later at a glance since we have already grouped the samples by colour.
+
+One more thing that we need to fix in Figure~\ref{rgraphics:fig:qplot2} is the
+readability of the bar labels. Right now they are running into each other --- a common
+problem when you have descriptive names. Let's rotate the text
+so that it is more readable as shown in Figure~\ref{rgraphics:fig:qplot3}.
+
+```{r figqplot3, fig.width=5, fig.height=4}
+qplot(x = names(groupSize),
+      y = as.vector(groupSize),
+      geom = "bar", stat = "identity",
+      xlab = "Groups", ylab = "Number of Samples",
+      fill = names(groupSize)) + 
+ scale_fill_manual(values = groupColour, name="Colour code") +
+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_figqplot3-1}
+\caption{Fixing the barplot names through rotation of the labels. }
+\label{rgraphics:fig:qplot3}
+\end{marginfigure}
+
+We have added on another clause, produced by the \Rfunction{theme}
+function, which indicates that we like $x$-axis text set at an angle of 90 degrees and 
+right justified (\Robject{hjust}; the default would be to center it).
+
+Now we have a great looking plot that clearly conveys our data on the number of samples in
+each group and also the types of groups that we are comparing.
+
+%--------------------------------------------------
+\section{The Grammar of Graphics}
+%--------------------------------------------------
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_figscp2layers1-1}
+\caption{A scatterplot with three layers that show different statistics of the same data: 
+points, a smooth regression line, and a confidence band.}
+\label{rgraphics:fig:scp2layers1}
+\end{marginfigure}
+
+The components of \CRANpkg{ggplot2}'s grammar of graphics are
+
+\begin{enumerate}
+\item a dataset
+\item a choice of geometric object that serves as the visual representations of the data
+  -- for instance, points, lines, rectangles, contours
+\item a description of how the variables in the data are mapped to visual properties
+  (aesthetics) of the geometric objects, and an associated scale, (e. g., linear,
+  logarithmic, rank)
+\item a statistical summarisation rule
+\item a coordinate system
+\item a facet specification, i.\,e. the use of several plots to look at the same data
+\end{enumerate}
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_figscp2layers2-1}
+\caption{As Figure~\ref{rgraphics:fig:scp2layers1}, but in addition with points coloured by
+  the sample group (as in Figure~\ref{rgraphics:fig:qplot2}). 
+  We can now see that the expression values of the gene 
+  `r AnnotationDbi::select(mouse4302.db, "1418765_at", keytype = "PROBEID", columns = "SYMBOL")$SYMBOL` %$
+  (whose mRNA is targeted by the probe 1418765\_at) are consistently high in the early time points,
+  whereas its expression goes down in the EPI samples at days 3.5 and 4.5. 
+  In the FGF4-KO, this decrease is delayed - at E3.5, its expression is still high.
+  Conversely, the gene
+  `r AnnotationDbi::select(mouse4302.db, "1426642_at", keytype = "PROBEID", columns = "SYMBOL")$SYMBOL` %$
+  (1426642\_at) is off in the early timepoints and then goes up at days 3.5 and 4.5.
+  The PE samples (green) show a high degree of cell-to-cell variability.}
+\label{rgraphics:fig:scp2layers2}
+\end{marginfigure}
+%
+In the examples above, Figures~\ref{rgraphics:fig:qplot1}--\ref{rgraphics:fig:qplot3}, the
+dataset was \Robject{groupsize}, the variables were the numeric values as well as the
+names of \Robject{groupsize}, which we mapped to the aesthetics $y$-axis and $x$-axis
+respectively, the scale was linear on the $y$ and rank-based on the $x$-axis (the bars are
+ordered alphanumerically and each has the same width), the geometric object was the
+rectangular bar, and the statistical summary was the trivial one (i.\,e., none). We did not make
+use of a facet specification in the plots above, but we'll see examples later on
+(Section~\ref{rgraphics:sec:facets}).
+
+In fact, \CRANpkg{ggplot2}'s implementation of the grammar of graphics allows you to use
+the same type of component multiple times, in what are called
+layers\cite{Wickham:LayeredGrammar}.  For example, the code below uses three types of
+geometric objects in the same plot, for the same data: points, a line, and a confidence
+band.
+%
+```{r loadlib, echo = FALSE, message = FALSE}
+library("mouse4302.db")
+```
+```{r findprobepairs, echo = FALSE, eval = FALSE}
+# I used this code to find the below two probes
+idx <- order(rowVars(exprs(x)), decreasing=TRUE)[seq_len(2000)]
+cc  <- cor(t(exprs(x)[idx,]))
+cco <- order(cc)[seq(1, 1001, by=2) ]
+jj2 <- rownames(exprs(x))[ idx[ (cco-1) %/% length(idx) + 1 ] ]
+jj1 <- rownames(exprs(x))[ idx[ (cco-1) %%  length(idx) + 1 ] ]
+dftx <- as.data.frame(t(exprs(x)))
+par(ask=TRUE)
+for(i in seq(along = cco)) {
+  df <- AnnotationDbi::select(mouse4302.db, 
+   keys = c(jj1[i], jj2[i]), keytype = "PROBEID",
+   columns = c("SYMBOL", "GENENAME"))
+  print(ggplot(dftx, aes( x = get(jj1[i]), y = get(jj2[i]))) +
+  geom_point(shape = 1) + 
+  xlab(paste(jj1[i], df$SYMBOL[1])) + 
+  ylab(paste(jj2[i], df$SYMBOL[2])) + 
+  ggtitle(round(cc[jj1[i], jj2[i]], 3)) +
+  geom_smooth(method = "loess"))
+}
+```
+```{r figscp2layers1, fig.width = 3.5, fig.height = 3.5}
+dftx <- data.frame(t(exprs(x)), pData(x))
+ggplot( dftx, aes( x = X1426642_at, y = X1418765_at)) +
+  geom_point( shape = 1 ) + 
+  geom_smooth( method = "loess" )
+```
+%
+We assembled a copy of the expression data (\Robject{exprs(x)}) and the sample annotation
+data (\Robject{pData(x)}) all together into the \Rclass{data.frame} \Robject{dftx} --
+since this is the data format that \Rpackage{ggplot2} functions most easily take as input
+(more on this in Sections~\ref{rgraphics:sec:tidydata1} and \ref{rgraphics:sec:tidydata2}).
+
+We can further enhance the plot by using colours -- since each of the points in
+Figure~\ref{rgraphics:fig:scp2layers1} corresponds to one sample, it makes sense to use
+the \Robject{sampleColour} information in the object \Robject{x}.
+%
+```{r figscp2layers2, fig.width = 3.5, fig.height = 3.5}
+ggplot( dftx, aes( x = X1426642_at, y = X1418765_at ))  + 
+  geom_point( aes( colour = sampleColour), shape = 19 ) +
+  geom_smooth( method = "loess" ) +
+  scale_colour_discrete( guide = FALSE ) 
+```
+%
+\begin{ques} 
+In the code above we defined the \Robject{colour} aesthetics
+(\Robject{aes}) only for the \Robject{geom\_point} layer, while we defined the \Robject{x}
+and \Robject{y} aesthetics for all layers. What happens if we set the \Robject{colour}
+aesthetics for all layers, i.\,e., move it into the argument list of \Rfunction{ggplot}?
+What happens if we omit the call to \Rfunction{scale\_colour\_discrete}?
+\end{ques} 
+
+\begin{ques} 
+Is it always meaningful to summarize scatterplot data with a regression 
+line as in Figures \ref{rgraphics:fig:scp2layers1} and \ref{rgraphics:fig:scp2layers2}?
+\end{ques} 
+
+% Note the downward-sloping quotation marks 
+% around the identifiers, 1426642\_at and
+% 1418765\_at. R understands these quotation marks to indicate variable names (or, here,
+% column names in the \Rclass{data.frame} \Robject{dftx}), and they are needed since
+% these identifiers would, without explicit quotation, not be valid variable names.
+
+As a small side remark, if we want to find out which genes are targeted by these probe
+identifiers, and what they might do, we can call\footnote{Note that here were need to use
+  the original feature identifiers (e.\,g., ``1426642\_at'', without the leading
+  ``X''). These is the notation used by the microarray manufacturer, by the Bioconductor
+  annotation packages, and also inside the object \Robject{x}. The leading ``X'' that we
+  used above when working with \Robject{dftx} was inserted during the creation of
+  \Robject{dftx} by the \Rfunction{data.frame}, since its argument \Robject{check.names}
+  is set to \Robject{TRUE} by default. Alternatively, we could have kept the original
+  identifer notation by setting \Robject{check.names=FALSE}, but then we would need to
+  work with the backticks, such as \Robject{aes( x = \lq 1426642\_at\lq, ...)}, to make
+  sure R understands them correctly.}.
+% Remark, WH 16.5.2015: I tried this initially but then got difficult to trace errors in 
+% below code using facet_wrap ...
+%
+```{r mouse4302.db, results="hide", message=FALSE}
+library("mouse4302.db")
+```
+```{r select}
+AnnotationDbi::select(mouse4302.db, 
+   keys = c("1426642_at", "1418765_at"), keytype = "PROBEID",
+   columns = c("SYMBOL", "GENENAME"))
+```
+%
+Often when using \Rfunction{ggplot} you will only need to specify the data, aesthetics, a
+geometric object, and labels (through the scale parameters). Most geometric objects
+implicitly call a suitable default statistical summary of the data, and vice versa. For
+example, if you are using \Robject{geom\_histogram}, \CRANpkg{ggplot2} implicitly bins
+your data and displays the results in barplot (\Robject{geom\_bar}) format.  Thus, you
+could equivalently plot your histogram by calling \Robject{geom\_bar} with
+\Robject{stat\_bin}.
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_fighists-1}
+\caption{Two different ways of creating the same histogram using the grammar of graphics.}
+\label{rgraphics:fig:hists}
+\end{marginfigure}
+%
+```{r fighists, fig.width = 3.5, fig.height = 5}
+dfx <- as.data.frame(exprs(x))
+p1 <- ggplot(dfx, aes(x = `20 E3.25`)) + 
+               geom_histogram(binwidth = 0.2)
+p2 <- ggplot(dfx, aes(x = `20 E3.25`)) + 
+               geom_bar(stat = "bin", binwidth = 0.2) 
+library("gridExtra")
+grid.arrange(p1, p2, nrow = 2)
+```
+%
+\Rfunction{grid.arrange} is a convenient helper function to arrange multiple plots (in
+this case, stored in the objects \Robject{p1} and \Robject{p2}) in a figure.
+
+Let's come back to the barplot example from above and see how it is done in the \Rfunction{ggplot} way.
+
+```{r figbpgg1}
+pb <- ggplot(data.frame(
+                 name = names(groupSize),
+                 size = as.vector(groupSize)),
+              aes(x = name, y = size))
+
+```
+For now we have simply created a plot object \Robject{pb} and have not generated a plot yet. 
+In fact we cannot make a plot yet, 
+```{r bpgg2, error=TRUE}
+pb
+```
+%
+because we haven't specified what geometric object we want to use for our plot. All that
+we have in our \Robject{pb} object so far are the data and the aesthetics.
+
+Now we can literally add on the other components of our plot through using the \Robject{+} operator:
+%
+```{r bpgg3, fig.width = 5, fig.height = 4}
+pb <- pb + geom_bar(stat = "identity") + 
+   aes(fill = name) + 
+   scale_fill_manual(values = groupColour, name = "Colour code") + 
+   theme(axis.text.x = element_text(angle = 90, hjust = 1))  + 
+   xlab("Groups") + ylab("Number of Samples")
+pb
+```
+
+\begin{marginfigure}[-3cm]
+\includegraphics[width=\linewidth]{r_bpgg3-1}
+\caption{Using \Rfunction{ggplot} to create our barplot.}
+\label{rgraphics:fig:bpgg6}
+\end{marginfigure}
+
+Thus we recreate our previous \Rfunction{qplot} result using the \Rfunction{ggplot}
+approach. This modular approach allows us a lot of freedom in creating figures and setting
+parameters. For example we can switch our plot to polar coordinates to create a popular
+alternative visualization of the barplot.
+
+% "out.extra="trim=0cm 25cm 0cm 25cm", clip = TRUE ?
+```{r bpgg4, fig.width = 5, fig.height = 4}
+pb.polar <- pb + coord_polar() + 
+  theme(axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()) + 
+  xlab("") + ylab("")
+pb.polar
+```
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_bpgg4-1}
+\caption{Using \Rfunction{ggplot} to create a barplot with polar coordinates.}
+\label{rgraphics:fig:bpgg7}
+\end{marginfigure}
+
+Note above that we can override previously set \Rfunction{theme} parameters by simply resetting them -- 
+no need to go back to recreating \Robject{pb}, where we originally set them. 
+
+%------------------------------------------------------------
+\section{1D visualisations}
+\label{rgraphics:sec:univar}
+%------------------------------------------------------------
+ 
+A fairly common task in biological data analysis is the comparison between several samples
+of univariate measurements. In this section we'll explore some possibilities for
+visualizing and comparing such samples. As an example, we'll use the intensities of a set
+of four genes Fgf4, Sox2, Gata6, Gata4 and Gapdh\footnote{You can read more about these
+genes in the paper associated with the data.}. On the array, they are represented by 
+```{r genes2ps1}
+probes <- c(Fgf4  = "1420085_at", Gata4 =  "1418863_at",      
+            Gata6 = "1425463_at",  Sox2 = "1416967_at") 
+```
+```{r genes2ps2, echo = FALSE, eval = FALSE}
+# How I found the probes:
+AnnotationDbi::select(mouse4302.db, 
+   keys = c("Fgf4", "Sox2", "Gata6", "Gata4"), keytype = "SYMBOL",
+   columns = c("PROBEID"))
+```
+```{r genes2ps3, echo = FALSE}
+probes2 <- AnnotationDbi::select(mouse4302.db, 
+   keys = probes, keytype = "PROBEID", columns = c("SYMBOL"))
+stopifnot(identical(sort(probes2$SYMBOL), sort(names(probes))),
+          all(probes[probes2$SYMBOL] == probes2$PROBEID))
+```
+%$
+
+%------------------------------------------------------------
+\subsection{Data tidying I -- matrices versus data.frame}
+\label{rgraphics:sec:tidydata1}
+%------------------------------------------------------------
+
+Data analysis, and in particular visualisation, often involves a lot of shuffling around
+of data, until they are in the right shape and format for the algorithm or plotting
+routine.  \CRANpkg{ggplot2} likes its data in \Rclass{data.frame} objects, and more
+specifically, in the long format\footnote{More about this below.}. The reasons behind this
+choice are well explained in Hadley Wickham's paper on \emph{tidy
+data}\cite{Wickham:TidyData}.  Essentially the long format table is a very universal
+representation that can accommodate pretty much any data type and easy to programmatically
+interface to. On the other hand, for a specific data type, it may not always be the most
+efficient way of storing data, and it cannot easily transport rich metadata (i.\,e., data
+about the data)\footnote{In other words, simple tables or \Rclass{data.frame}s cannot
+offer all the nice features provided by object oriented approaches, such as encapsulation,
+abstraction of interface from implementation, polymorphism, inheritance and reflection.}.
+For instance, our example dataset \Robject{x} is stored as an object in Bioconductor's \Rclass{ExpressionSet} 
+class, which has multiple components, most importantly, the matrix \Robject{exprs(x)} with 
+`r nrow(x)` rows and 
+`r ncol(x)` columns. The matrix elements are the gene expression measurements, and the 
+feature and sample associated with each measurement are implied by its position (row, column) in the matrix; 
+in contrast, in the long table format, the feature and sample identifiers need to be stored explicitly 
+with each measurement. Besides,
+\Robject{x} has additional components, including the \Rclass{data.frame}s
+\Robject{fData(x)} and \Robject{pData}, which provide various sets metadata about the microarray
+\textbf{f}eatures and the \textbf{p}henotypic information about the samples.
+To extract data from this representation and convert them into a \Rclass{data.frame}, 
+we use the function \Rfunction{melt}, which we'll explain in more detail below. 
+
+```{r melt}
+library("reshape2")
+genes <- melt(exprs(x)[probes, ], varnames = c("probe", "sample"))
+head(genes)
+```
+
+For good measure, we also add a column that provides the gene symbol along with the probe identifiers.
+% 
+```{r symbol}
+genes$gene <- names(probes)[ match(genes$probe, probes) ]
+```
+
+
+%------------------------------------------------------------
+\subsection{Barplots}
+%------------------------------------------------------------
+A popular way to display data such as in our \Rclass{data.frame} \Robject{genes} is through barplots.
+See Fig.~\ref{rgraphics:fig:onedbp1}.
+```{r onedbp1, fig.width = 3.75, fig.height = 3.75}
+ggplot(genes, aes( x = gene, y = value)) + 
+  stat_summary(fun.y = mean, geom = "bar")
+```
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_onedbp1-1}
+\caption{Barplots showing the means of the distributions of expression measurements from 4 probes.}
+\label{rgraphics:fig:onedbp1}
+\end{marginfigure}
+%
+In Figure~\ref{rgraphics:fig:onedbp1}, each bar represents the mean of the values for that gene. Such plots
+are seen a lot in the biological sciences, as well as in the popular media. The data summarisation 
+into only the mean looses a lot of information, and given the amount of space it takes, a barplot 
+can be a poor way to visualise data\footnote{In fact, if the mean is an appropriate summary, such 
+as for highly skewed distributions, or data sets with outliers, the barplot can be outright misleading.}.
+
+Sometimes we want to add error bars, and one way to achieve this in \CRANpkg{ggplot2} is as follows. 
+%
+```{r onedbp2, fig.width = 3.75, fig.height = 3.75}
+library("Hmisc")
+ggplot(genes, aes( x = gene, y = value, fill = gene)) + 
+  stat_summary(fun.y = mean, geom = "bar") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", 
+               mult = 1, width = 0.25)
+```
+%
+Here, we see again the principle of layered graphics:fig: we use two summary functions,
+\Rfunction{mean} and \Rfunction{mean\_cl\_normal}, and two associated geometric objects,
+\Robject{bar} and \Robject{errorbar}. The function \Rfunction{mean\_cl\_normal} is from
+the \CRANpkg{Hmisc} package and computes the standard error (or \textbf{c}onfidence
+\textbf{l}imits) of the mean; it's a simple function, and we could also compute it
+ourselves using base R expressions if we wished to do so.  We also coloured the bars in 
+lighter colours for better contrast.  
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_onedbp2-1}
+\caption{Barplots with error bars indicating standard error of the mean.}
+\label{rgraphics:fig:onedbp2}
+\end{marginfigure}
+
+%------------------------------------------------------------
+\subsection{Boxplots}
+%------------------------------------------------------------
+It's easy to show the same data with boxplots.
+%
+```{r onedboxpl, fig.width = 3.75, fig.height = 3.75}
+p <- ggplot(genes, aes( x = gene, y = value, fill = gene)) 
+p + geom_boxplot()
+```
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_onedboxpl-1}
+\caption{Boxplots.}
+\label{rgraphics:fig:onedboxpl}
+\end{marginfigure}
+
+Compared to the barplots, this takes a similar amount of space, but is much more
+informative. In Figure~\ref{rgraphics:fig:onedboxpl} we see that two of the genes (Gata4, Gata6)
+have relatively concentrated distributions, with only a few data points venturing out to
+the direction of higher values. For Fgf4, we see that the distribution is right-skewed:
+the median, indicated by the horizontal black bar within the box is closer to the lower (or
+left) side of the box. Analogously, for Sox2 the distribution is left-skewed.
+
+%------------------------------------------------------------
+\subsection{Violin plots}
+%------------------------------------------------------------
+
+A variation of the boxplot idea, but with an even more direct representation of the shape
+of the data distribution, is the violin plot. Here, the shape of the violin gives a rough
+impression of the distribution density.
+
+```{r onedviolin, fig.width = 3.75, fig.height = 3.75}
+p + geom_violin()
+```
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_onedviolin-1}
+\caption{Violin plots.}
+\label{rgraphics:fig:onedviolin}
+\end{marginfigure}
+
+%------------------------------------------------------------
+\subsection{Dot plots and beeswarm plots}
+%------------------------------------------------------------
+
+If the number of data points is not too large, it is possible to show the data points
+directly, and it is good practice to do so, compared to using more abstract
+summaries. 
+
+However, plotting the data directly will often lead to overlapping points, which can be
+visually unpleasant, or even obscure the data. We can try to layout the points so that
+they are as near possible to their proper locations without
+overlap\cite{Wilkinson:DotPlots:1999}. 
+
+```{r oneddot, fig.width = 5, fig.height = 5}
+p + geom_dotplot(binaxis = "y", binwidth = 1/6, 
+       stackdir = "center", stackratio = 0.75, 
+       aes(color = gene))
+```
+
+The plot is shown in the left panel of Figure~\ref{rgraphics:fig:oneddot}. The $y$-coordinates of
+the points are discretized into bins (above we chose a bin size of 1/6), and then they
+are stacked next to each other.
+
+A fun alternative is provided by the package \CRANpkg{beeswarm}. It works with base R
+graphics and is not directly integrated into \CRANpkg{ggplot2}'s data flows, so we can
+either use the base R graphics output, or pass on the point coordinates to
+\Rfunction{ggplot} as follows.
+
+```{r onedbee, fig.width = 5, fig.height = 5}
+library("beeswarm")
+bee <- beeswarm(value ~ gene, data = genes, spacing = 0.7)
+ggplot(bee, aes( x = x, y = y, colour = x.orig)) + 
+  geom_point(shape = 19) + xlab("gene") + ylab("value") +
+  scale_fill_manual(values = probes)
+```
+
+\begin{figure}
+\includegraphics[width=.49\linewidth]{r_oneddot-1}
+\includegraphics[width=.49\linewidth]{r_onedbee-2}
+\caption{Left: dot plots, made using \Rfunction{geom\_dotplot} from \CRANpkg{ggplot2}. 
+Right: beeswarm plots, with layout obtained via the \CRANpkg{beeswarm} package and 
+plotted as a scatterplot with \Rfunction{ggplot}.} 
+\label{rgraphics:fig:oneddot}
+\end{figure}
+
+The plot is shown in the right panel of Figure~\ref{rgraphics:fig:oneddot}. 
+The default layout method used by \Rfunction{beeswarm} is called \emph{swarm}. It places
+points in increasing order. If a point would overlap an existing point, it is shifted
+sideways (along the $x$-axis) by a minimal amount sufficient to avoid overlap.
+
+As you have seen in the above code examples, some twiddling with layout parameters is
+usually needed to make a dot plot or a beeswarm plot look good for a particular dataset.
+
+%------------------------------------------------------------
+\subsection{Density plots}
+%------------------------------------------------------------
+Yet another way to represent the same data is by lines plots of the density plots
+%
+```{r oneddens, fig.width = 3.75, fig.height = 3.75}
+ggplot(genes, aes( x = value, colour = gene)) + geom_density()
+```
+%
+Density estimation has a number of complications, and you can see these in
+Figure~\ref{rgraphics:fig:oneddens}.  In particular, the need for choosing a smoothing window. A
+window size that is small enough to capture peaks in the dense regions of the data may
+lead to instable (``wiggly'') estimates elsewhere; if the window is made bigger,
+pronounced features of the density may be smoothed out.  Moreover, the density lines do
+not convey the information on how much data was used to estimate them, and plots like
+Figure~\ref{rgraphics:fig:oneddens} can become especially problematic if the sample sizes for the
+curves differ.
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_oneddens-1}
+\caption{Density plots.}
+\label{rgraphics:fig:oneddens}
+\end{marginfigure}
+
+%------------------------------------------------------------
+\subsection{ECDF plots}
+%------------------------------------------------------------
+The mathematically most robust way to describe the distribution of a one-dimensional
+random variable $X$ is its cumulative distribution function (CDF), i.\,e., the function
+\begin{equation}
+F(x) = P(X\le x),
+\end{equation}
+where $x$ takes all values along the real axis. The density of $X$ is then the derivative
+of $F$, if it exists\footnote{By its definition, $F$ tends to 0 for small $x$ ($x\to-\infty$) and
+to 1 for large $x$ ($x\to+\infty$).}.  The definition of the CDF can also be 
+applied to finite samples of $X$, i.\,e., samples $x_1,\ldots,x_n$. The empirical 
+cumulative distribution function (ECDF) is simply
+\begin{equation}
+F_{n}(x) = \frac{1}{n}\sum_{i=1}^n \mathbbm{1}_{x\le x_i}.
+\end{equation}
+An important property is that even for limited sample sizes $n$, the ECDF
+$F_{n}$ is not very far from the CDF, $F$.  This is not the case for the
+empirical density! Without smoothing, the empirical density of a finite sample is a sum of
+Dirac delta functions, which is difficult to visualize and quite different from any
+underlying smooth, true density.  With smoothing, the difference can be less pronounced, but 
+is difficult to control, as discussed above.
+%
+```{r onedecdf, fig.width = 3.75, fig.height = 3.75}
+ggplot(genes, aes( x = value, colour = gene)) + stat_ecdf()
+```
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_onedecdf-1}
+\caption{Empirical cumulative distribution functions (ECDF).}
+\label{rgraphics:fig:onedecdf}
+\end{marginfigure}
+
+%------------------------------------------------------------
+\subsection{Data tidying II - Wide vs long format}
+\label{rgraphics:sec:tidydata2}
+%------------------------------------------------------------
+
+Let us revisit the \Rfunction{melt} command from above. In the resulting
+\Rclass{data.frame} \Robject{genes}, each row corresponds to exactly one measured value,
+stored in the column \Robject{value}. Then there are 
+additional columns `r colnames(genes)[1]` and  `r colnames(genes)[2]`, 
+which store the associated covariates.
+Compare this to the following \Rclass{data.frame} (for space reasons we print only the first five columns):
+
+```{r dt2}
+as.data.frame(exprs(x)[probes, ])[, 1:5]
+```
+
+This \Rclass{data.frame} has several columns of data, one for each sample (annotated by
+the column names). Its rows correspond to the four probes, annotated by the row
+names. This is an example for a data table in \emph{wide format}.
+
+Now suppose we want to store somewhere not only the probe identifiers but also the
+associated gene symbols. We could stick them as an additional column into the wide format
+\Rclass{data.frame}, and perhaps also throw in the genes' ENSEMBL identifier for good
+measure.  But now we immediately see the problem: the \Rclass{data.frame} now has some
+columns that represent different samples, and others that refer to information for all
+samples (the gene symbol and identifier) and we somehow have to "know" this when
+interpreting the \Rclass{data.frame}. This is what Hadley Wickham calls \emph{untidy
+  data}\footnote{\href{http://en.wikipedia.org/wiki/Anna_Karenina_principle}{There are many different ways for data to be untidy.}}.  
+In contrast, in
+the tidy \Rclass{data.frame} \Robject{genes}, we can add these columns, yet still know
+that each row forms exactly one observation, and all information associated with that
+observation is in the same row.
+
+In tidy data\cite{Wickham:TidyData},
+\begin{enumerate}
+\item each variable forms a column,
+\item each observation forms a row,
+\item each type of observational unit forms a table.
+\end{enumerate}
+A potential drawback is efficiency: even though there are only `r length(probes)` probe --
+gene symbol relationships, we are now storing them `r nrow(genes)` times in the rows of
+the \Rclass{data.frame} \Robject{genes}. Moreover, there is no standardisation: we chose
+to call this column \Robject{symbol}, but the next person might call it \Robject{Symbol}
+or even something completely different, and when we find a \Rclass{data.frame} that was
+made by someone else and that contains a column \Robject{symbol}, we can hope, but have no
+guarantee, that these are valid gene symbols. Addressing such issues is behind the
+object-oriented design of the specialized data structures in Bioconductor, such as the
+\Rclass{ExpressionSet} class.
+
+%------------------------------------------------------------
+\section{2D visualisation: Scatter Plots}
+\label{rgraphics:sec:2d}
+%------------------------------------------------------------
+Scatter plots are useful for visualizing treatment--response comparisons (as in
+Figure~\ref{rgraphics:fig:basicplotting2}), associations between variables (as in
+Figure~\ref{rgraphics:fig:scp2layers2}), or paired data (e.\,g., a disease biomarker in
+several patients before and after treatment). We use the two dimensions of our plotting
+paper, or screen, to represent the two variables.
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_twodsp1-1}
+\caption{Scatterplot of `r nrow(dfx)` expression measurements for two of the samples.}
+\label{rgraphics:fig:twodsp1}
+\end{marginfigure}
+%
+Let us take a look at differential expression between a wildtype and an FGF4-KO sample.
+%
+```{r fourfive, eval=FALSE, echo=FALSE}
+scp <- ggplot(dfx, aes( x = `37 E3.5 (PE)` , 
+                        y = `84 E3.5 (FGF4-KO)`))
+```
+```{r twodsp1, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp <- ggplot(dfx, aes( x = `59 E4.5 (PE)` , 
+                        y = `92 E4.5 (FGF4-KO)`))
+scp + geom_point()
+```
+%
+The labels \Robject{`r scp$labels$x`} and \Robject{`r scp$labels$y`} refer to column names (sample names)
+in the \Rclass{data.frame} \Robject{dfx}, which we created above. Since they contain
+special characters (spaces, parentheses, hyphen) and start with numerals, we need to
+enclose them with the downward sloping quotes to make them syntactically digestible for R.
+The plot is shown in Figure~\ref{rgraphics:fig:onedbp1}.
+We get a dense point cloud that we can try and interpret on the outskirts of the cloud,
+but we really have no idea visually how the data are distributed within the denser regions of
+the plot.
+
+One easy way to ameliorate the overplotting is to adjust the transparency (alpha value) of
+the points by modifying the \Robject{alpha} parameter of \Rfunction{geom\_point}
+(Figure~\ref{rgraphics:fig:twodsp2}).
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_twodsp2-1}
+\caption{As Figure~\ref{rgraphics:fig:twodsp1}, but with semi-transparent points to resolve 
+some of the overplotting.}
+\label{rgraphics:fig:twodsp2}
+\end{marginfigure}
+%
+```{r twodsp2, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp  + geom_point(alpha = 0.1)
+```
+%
+This is already better than Figure~\ref{rgraphics:fig:twodsp1}, but in the very density regions
+even the semi-transparent points quickly overplot to a featureless black mass, while the
+more isolated, outlying points are getting faint.
+An alternative is a contour plot of the 2D density,
+which has the added benefit of not rendering all of the points on the plot, as in 
+Figure~\ref{rgraphics:fig:twodsp3}.
+%
+```{r twodsp3, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp + geom_density2d()
+```
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_twodsp3-1}
+\caption{As Figure~\ref{rgraphics:fig:twodsp1}, but rendered as a contour plot of the 2D density estimate.}
+\label{rgraphics:fig:twodsp3}
+\end{marginfigure}
+%
+However, we see in Figure~\ref{rgraphics:fig:twodsp3} that the point cloud at the bottom right (which 
+contains a relatively small number of points) is no longer represented. We can somewhat overcome 
+this by tweaking the bandwidth and binning parameters of \Rfunction{geom\_density2d} 
+(Figure~\ref{rgraphics:fig:twodsp4}, left panel).
+%
+```{r twodsp4, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+scp + geom_density2d(h = 0.5, bins = 60)
+```
+%
+We can fill in each space between the contour lines with the relative density of points by
+explicitly calling the function \Rfunction{stat\_density2d} (for which
+\Rfunction{geom\_density2d} is a wrapper) and using the geometric object \emph{polygon},
+as in the right panel of Figure~\ref{rgraphics:fig:twodsp4}. 
+%
+```{r twodsp5, fig.width = 5.25, fig.height = 3.75, dev = "png", message = FALSE}
+library("RColorBrewer")
+colourscale <- scale_fill_gradientn( 
+    colours = rev(brewer.pal(9, "YlGnBu")),
+    values = c(0, exp(seq(-5, 0, length.out = 100)))) 
+
+scp + stat_density2d(h = 0.5, bins = 60, 
+          aes( fill = ..level..), geom = "polygon") + 
+  colourscale + coord_fixed()
+```
+% 
+\begin{figure}
+\includegraphics[width=0.416\linewidth]{r_twodsp4-1}
+\includegraphics[width=0.582\linewidth]{r_twodsp5-1}
+\caption{Left: as Figure~\ref{rgraphics:fig:twodsp3}, but with smaller smoothing bandwidth and tighter 
+binning for the contour lines. Right: with colour filling.}
+\label{rgraphics:fig:twodsp4}
+\end{figure}
+%
+We used the function \Rfunction{brewer.pal} from the package \CRANpkg{RColorBrewer} to
+define the colour scale, and we added a call to \Rfunction{coord\_fixed} to fix the
+aspect ratio of the plot, to make sure that the mapping of data range to $x$- and
+$y$-coordinates is the same for the two variables.
+Both of these issues merit a deeper look, and we'll talk more about plot shapes in   
+Section~\ref{rgraphics:sec:banking} and about colours in Section~\ref{rgraphics:sec:colour}.
+
+The density based plotting methods in Figure~\ref{rgraphics:fig:twodsp4} are more visually
+appealing and interpretable than the overplotted point clouds of
+Figures~\ref{rgraphics:fig:twodsp1} and \ref{rgraphics:fig:twodsp2}, though we have to be careful in using
+them as we loose a lot of the information on the outlier points in the sparser regions of
+the plot. One possibility is using \Rfunction{geom\_point} to add such points back in.
+
+But arguably the best alternative, which avoids the limitations of smoothing, is hexagonal
+binning\cite{Carr1987hexbin}.
+
+%
+```{r twodsp6, fig.width = 5.25, fig.height = 3.75, dev = "png"}
+library("hexbin")
+scp + stat_binhex() + coord_fixed()
+scp + stat_binhex(binwidth = c(0.2, 0.2)) + colourscale + 
+  coord_fixed()
+```
+%
+\begin{figure}
+\includegraphics[width=0.499\linewidth]{r_twodsp6-1}
+\includegraphics[width=0.499\linewidth]{r_twodsp6-2}
+\caption{Hexagonal binning. Left: default parameters. Right: finer bin sizes and
+  customized colour scale.}
+\label{rgraphics:fig:twodsp6}
+\end{figure}
+
+
+%------------------------------------------------------------
+\subsection{Plot shapes}
+\label{rgraphics:sec:banking}
+%------------------------------------------------------------
+Choosing the proper shape for your plot is important to make sure the information is
+conveyed well. By default, the shape parameter, that is, the ratio, between the height of
+the graph and its width, is chosen by \CRANpkg{ggplot2} based on the available space in
+the current plotting device. The width and height of the device are specified when it is
+opened in R, either explicitly by you or through default parameters\footnote{E.\,g., see
+  the manual pages of the \Rfunction{pdf} and \Rfunction{png} functions.}. Moreover, the
+graph dimensions also depend on the presence or absence of additional decorations, like
+the colour scale bars in Figure~\ref{rgraphics:fig:twodsp6}.
+
+There are two simple rules that you can apply for scatterplots:
+\begin{itemize}
+\item If the variables on the two axes are measured in the same units, then make sure that
+  the same mapping of data space to physical space is used -- i.\,e., use
+  \Rfunction{coord\_fixed}.  In the scatterplots above, both axes are the logarithm
+  to base 2 of expression level measurements, that is a change by one unit has the same
+  meaning on both axes (a doubling of the expression level). Another case is principal
+  component analysis (PCA), where the $x$-axis typically represents component 1, and the
+  $y$-axis component 2. Since the axes arise from an orthonormal rotation of input data
+  space, we want to make sure their scales match. Since the variance of the data is (by
+  definition) smaller along the second component than along the first component (or at
+  most, equal), well-done PCA plots usually have a width that's larger than the height.
+\item If the variables on the two axes are measured in different units, then we can still
+  relate them to each other by comparing their dimensions. The default in many plotting
+  routines in R, including \CRANpkg{ggplot2}, is to look at the range of the data and map
+  it to the available plotting region. However, in particular when the data more or less
+  follow a line, looking at the typical slope of the line can be useful.
+  This is called banking\cite{Cleveland:1988:Banking}.
+\end{itemize}
+To illustrate banking, let's use the classic sunspot data from Cleveland's paper.
+%
+\begin{figure}
+\includegraphics[width=0.8\linewidth]{r_banking1-1}\\
+\includegraphics[width=0.8\linewidth]{r_banking2-1}
+\caption{The sunspot data. In the upper panel, the plot shape is roughly quadratic, a
+  frequent default choice. In the lower panel, a technique called \emph{banking} was used
+  to choose the plot shape.}
+\label{rgraphics:fig:banking}
+\end{figure}
+%
+```{r banking1, fig.width = 3.75, fig.height = 3.75}
+library("ggthemes")
+sunsp <- data.frame(year   = time( sunspot.year ),
+                    number = as.numeric( sunspot.year ))
+sp <- ggplot(sunsp, aes(x = year, y = number)) + geom_line()
+sp
+```
+%
+The resulting plot is shown in the upper panel of Figure~\ref{rgraphics:fig:banking}. We can
+clearly see long-term fluctuations in the amplitude of sunspot activity cycles, with
+particularly low maximum activities in the early 1700s, early 1800s, and around the turn
+of the 20$^\text{th}$ century. But now lets try out banking. 
+%
+```{r banking2, fig.width = 3.75, fig.height = 2}
+ratio <- with(sunsp, bank_slopes(year, number))
+sp + coord_fixed(ratio = ratio)
+```
+%
+What the algorithm does is to look at the slopes in the curve, and in particular, the
+above call to \Rfunction{bank\_slopes} computes the median absolute slope, and then with
+the call to \Robject{coord\_fixed} we shape the plot such that this quantity becomes
+1. The result is shown in the lower panel of Figure~\ref{rgraphics:fig:banking}. Quite
+counter-intuitively, even though the plot takes much smaller space, we see more on it!
+Namely, we can see the saw-tooth shape of the sunspot cycles, with sharp rises and more
+slow declines.
+
+
+%------------------------------------------------------------
+\section{3--5D data}
+\label{rgraphics:sec:facets}
+%------------------------------------------------------------
+Sometimes we want to show the relations between more than two variables. Obvious choices
+for including additional dimensions are the plot symbol shapes and colours. The
+\Rfunction{geom\_point} geometric object offers the following aesthetics (beyond
+\Robject{x} and \Robject{y}):
+\begin{itemize}
+\item \Robject{fill}
+\item \Robject{colour}
+\item \Robject{shape}
+\item \Robject{size} 
+\item \Robject{alpha}
+\end{itemize}
+They are explored in the manual page of the \Rfunction{geom\_point}
+function. \Robject{fill} and \Robject{colour} refer to the fill and outline colour of an
+object; \Robject{alpha} to its transparency level. Above, in Figures~\ref{rgraphics:fig:twodsp2}
+and following, we have used colour or transparency to reflect point density and avoid the
+obscuring effects of overplotting. Instead, we can use them show other dimensions of the
+data (but of course we can only do one or the other). In principle, we could use all the 5
+aesthetics listed above simultaneously to show up to 7-dimensional data; however, such a
+plot would be hard to decipher, and most often we are better off with one or two
+additional dimensions and mapping them to a choice of the available aesthetics.
+
+%------------------------------------------------------------
+\subsection{Faceting}
+%------------------------------------------------------------
+
+Another way to show additional dimensions of the data is to show multiple plots that
+result from repeatedly subsetting (or ``slicing'') our data based on one (or more) of the
+variables, so that we can visualize each part separately. So we can, for instance,
+investigate whether the observed patterns among the other variables are the same or
+different across the range of the faceting variable. Let's look at an example\footnote{The
+  first line, \Rfunction{mutate} is not strictly necessary -- it's just some data
+  wrangling to make the plots look better.}
+
+```{r facet1, fig.width = 8, fig.height = 2}
+dftx <- mutate(dftx, lineage = factor(sub("^$", "no", lineage), 
+  levels = c("no", "EPI", "PE", "FGF4-KO")))
+
+ggplot(dftx, aes( x = X1426642_at, y = X1418765_at)) + 
+  geom_point() + facet_grid( . ~ lineage )
+```
+%$
+
+\begin{figure}
+\includegraphics[width=\linewidth]{r_facet1-1}
+\caption{An example for \emph{faceting}: the same data as in
+  Figure~\ref{rgraphics:fig:scp2layers1}, but now split by the categorical variable
+  \Robject{lineage}.}
+\label{rgraphics:fig:facet1}
+\end{figure}
+
+The result is shown in Figure~\ref{rgraphics:fig:facet1}. We used the formula
+language to specify by which variable we want to do the splitting, and that the separate
+panels should be in different columns: \Robject{facet\_grid( . $\sim$ lineage )}. In fact, we
+can specify two faceting variables, as follows; the result is shown in
+Figure~\ref{rgraphics:fig:facet2}.
+
+```{r facet2, fig.width = 8, fig.height = 6}
+ggplot( dftx, 
+  aes( x = X1426642_at, y = X1418765_at)) + geom_point() +
+   facet_grid( Embryonic.day ~ lineage )
+```
+
+\begin{figure}
+\includegraphics[width=\linewidth]{r_facet2-1}
+\caption{\emph{Faceting}: the same data as in Figure~\ref{rgraphics:fig:scp2layers1},
+  split by the categorical variables \Robject{Embryonic.day} (rows) and \Robject{lineage}
+  (columns).}
+\label{rgraphics:fig:facet2}
+\end{figure}
+
+Another useful function is \Rfunction{facet\_wrap}: if the faceting variables has too many
+levels for all the plots to fit in one row or one column, then this function can be used
+to wrap them into a specified number of columns or rows.
+
+We can use a continuous variable by discretizing it into levels. The function
+\Rfunction{cut} is useful for this purpose.
+
+```{r facet3, fig.width = 4, fig.height = 4}
+ggplot(mutate(dftx, Tdgf1 = cut(X1450989_at, breaks = 4)),
+   aes( x = X1426642_at, y = X1418765_at)) + geom_point() +
+   facet_wrap( ~ Tdgf1, ncol = 2 )
+```
+
+We see in Figure~\ref{rgraphics:fig:facet3} that the number of points in the four
+panel is different, this is because \Rfunction{cut} splits into bins of equal length, not
+equal number of points. If we want the latter, then we can use \Rfunction{quantile} in
+conjunction with \Rfunction{cut}.
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_facet3-1}
+\caption{\emph{Faceting}: the same data as in Figure~\ref{rgraphics:fig:scp2layers1},
+  split by the continuous variable \Robject{X1450989\_at} and arranged by
+  \Rfunction{facet\_wrap}.}
+\label{rgraphics:fig:facet3}
+\end{marginfigure}
+
+\paragraph{Axes scales} 
+In Figures~\ref{rgraphics:fig:facet1}--\ref{rgraphics:fig:facet3}, the axes
+scales are the same for all plots.  Alternatively, we could let them vary by setting the
+\Robject{scales} argument of the \Rfunction{facet\_grid} and \Rfunction{facet\_wrap}; this
+parameters allows you to control whether to leave the $x$-axis, the $y$-axis, or both to
+be freely variable. Such alternatives scalings might allows us to see the full detail of
+each plot and thus make more minute observations about what is going on in each. The
+downside is that the plot dimensions are not comparable across the groupings.
+
+\paragraph{Implicit faceting} You can also facet your plots (without explicit
+calls to \Rfunction{facet\_grid} and \Rfunction{facet\_wrap}) by specifying the
+aesthetics. A very simple version of implicit faceting is using a factor as your $x$-axis,
+such as in Figures~\ref{rgraphics:fig:onedbp1}--\ref{rgraphics:fig:oneddot}
+
+%------------------------------------------------------------
+\subsection{plotly, webgl}
+%------------------------------------------------------------
+\fixme{Mention them as they are cool.}
+
+%------------------------------------------------------------
+\section{Colour}
+\label{rgraphics:sec:colour}
+%------------------------------------------------------------
+
+An important consideration when making plots is the colouring that we use in them.  Most R
+users are likely familiar with the built-in R colour scheme, used by base R graphics, as
+shown in Figure~\ref{rgraphics:fig:simplecolourpie}.
+
+```{r simplecolourpie, fig.width = 3, fig.height = 3}
+pie(rep(1, 8), col=1:8)
+```
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_simplecolourpie-1}
+\caption{Basic R colours. }
+\label{rgraphics:fig:simplecolourpie}
+\end{marginfigure}
+
+These colour choices date back from 1980s hardware, where graphics cards handled colours
+by letting each pixel either fully use or not use each of the three basic colour channels
+of the display: red, green and blue (RGB): this leads to $2^3=8$ combinations, which lie
+at the 8 the extreme corners of the RGB color cube\footnote{Thus the $8^\text{th}$ colour
+  should be white; in R, whose basic infastructure was put together when more
+  sophisticated graphics display were already available, this was replaced by grey, as you
+  can see in Figure~\ref{rgraphics:fig:simplecolourpie}.}  The colours in
+Figure~\ref{rgraphics:fig:simplecolourpie} are harsh on the eyes, and there is no good
+excuse any more for creating graphics that are based on this palette. Fortunately, the
+default colours used by some of the more modern visualisation oriented packages (including
+\CRANpkg{ggplot2}) are much better already, but sometimes we want to make our own choices.
+
+In Section~\ref{rgraphics:sec:2d} we saw the function \Rfunction{scale\_fill\_gradientn},
+which allowed us to create the colour gradient used in Figures \ref{rgraphics:fig:twodsp4}
+and \ref{rgraphics:fig:twodsp6} by interpolating the basic colour palette defined by the
+function \Rfunction{brewer.pal} in the \CRANpkg{RColorBrewer} package. This package
+defines a great set of colour palettes, we can see all of them at a glance by using the
+function \Rfunction{display.brewer.all} (Figure~\ref{rgraphics:fig:RColorBrewer}).
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_RColorBrewer-1}
+\caption{RColorBrewer palettes.}
+\label{rgraphics:fig:RColorBrewer}
+\end{marginfigure}
+%
+```{r RColorBrewer, fig.width=4, fig.height=7}
+display.brewer.all()
+```
+%
+We can get information about the available colour palettes from the 
+\Rclass{`r class(brewer.pal.info)`} \Robject{brewer.pal.info}.
+%
+```{r colour3}
+head(brewer.pal.info)
+table(brewer.pal.info$category)
+```
+%$
+The palettes are divided into three categories: 
+\begin{itemize}
+\item qualitative: for categorical properties that have no intrinsic ordering. The
+  \Robject{Paired} palette supports up to 6 categories that each fall into two
+  subcategories - like \emph{before} and \emph{after}, \emph{with} and \emph{without}
+  treatment, etc.
+\item sequential: for quantitative properties that go from \emph{low} to \emph{high}
+\item diverging: for quantitative properties for which there is a natural midpoint or
+  neutral value, and whose value can deviate both up- and down; we'll see an example in
+  Figure~\ref{rgraphics:fig:heatmap}.
+\end{itemize}
+To obtain the colours from a particular palette we use the function
+\Rfunction{brewer.pal}. Its first argument is the number of colours we want (which can be
+less than the available maximum number in \Robject{brewer.pal.info}).
+%
+```{r colour4}
+brewer.pal(4, "RdYlGn")
+```
+%
+If we want more than the available number of preset colours (for example so we can plot a
+heatmap with continuous colours) we can use the \Rfunction{colorRampPalette} function
+command to interpolate any of the \CRANpkg{RColorBrewer} presets -- or any set of colours:
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_colorRampPalette-1}
+\caption{A quasi-continuous colour palette derived by interpolating between the colours
+  \Robject{darkorange3}, \Robject{white} and \Robject{darkblue}. }
+\label{rgraphics:fig:colorRampPalette}
+\end{marginfigure}
+%
+```{r colorRampPalette, fig.width = 3, fig.height = .7}
+mypalette  <- colorRampPalette(c("darkorange3", "white", 
+                                          "darkblue"))(100)
+head(mypalette)
+par(mai = rep(0.1, 4))
+image(matrix(1:100, nrow = 100, ncol = 10), col = mypalette, 
+        xaxt = "n", yaxt = "n", useRaster = TRUE)
+```
+
+%--------------------------------------------------
+\subsection{Heatmaps}
+%--------------------------------------------------
+
+Heatmaps are a powerful of visualising large, matrix-like datasets and giving a quick
+overview over the patterns that might be in there. There are a number of heatmap drawing
+functions in R; one that is particularly versatile and produces good-looking output is the
+function \Rfunction{pheatmap} from the eponymous package. In the code below, we first
+select the top 500 most variable genes in the dataset \Robject{x}, and define a function
+\Rfunction{rowCenter} that centers each gene (row) by subtracting the mean across
+columns. By default, \Rfunction{pheatmap} uses the \emph{RdYlBu} colour palette 
+from \CRANpkg{RcolorBrewer} in 
+conjuction with the \Rfunction{colorRampPalette} function to interpolate the 
+`r brewer.pal.info["RdYlBu", "maxcolors"]` colour into a smooth-looking palette 
+(Figure~\ref{rgraphics:fig:heatmap}).
+%
+```{r heatmap, fig.width = 7, fig.height = 7}
+library("pheatmap")
+topGenes <- order(rowVars(exprs(x)), decreasing = TRUE)[ seq_len(500) ]
+rowCenter <- function(x) { x - rowMeans(x) }
+pheatmap( rowCenter(exprs(x)[ topGenes, ] ),
+  show_rownames = FALSE, show_colnames = FALSE, 
+  breaks = seq(-5, +5, length = 101),
+  annotation_col = pData(x)[, c("sampleGroup", "Embryonic.day", "ScanDate") ],
+  annotation_colors = list(
+    sampleGroup = groupColour,
+    genotype = c(`FGF4-KO` = "chocolate1", `WT` = "azure2"),
+    Embryonic.day = setNames(brewer.pal(9, "Blues")[c(3, 6, 9)], c("E3.25", "E3.5", "E4.5")),
+    ScanDate = setNames(brewer.pal(nlevels(x$ScanDate), "YlGn"), levels(x$ScanDate))
+  ),
+  cutree_rows = 4
+)
+```
+%
+\begin{figure}
+\includegraphics[width=.9\linewidth]{r_heatmap-1}
+\caption{A heatmap of relative expression values, i.\,e., $\log_2$ fold change compared to
+  the average expression of that gene (row) across all samples (columns). The colour scale
+  uses a diverging palette, whose neutral midpoint is at 0.}
+\label{rgraphics:fig:heatmap}
+\end{figure}
+%
+Let us take a minute to deconstruct the rather massive-looking call to
+\Rfunction{pheatmap}.  The options \Robject{show\_rownames} and \Robject{show\_colnames}
+control whether the row and column names are printed at the sides of the matrix. Because
+our matrix is large in relation to the available plotting space, the labels would anyway
+not be readable, and we suppress them. The \Robject{annotation\_col} argument takes a data
+frame that carries
+% whose rows match the samples (matrix columns), and whose columns can carry
+additional information about the samples. The information is shown in the coloured bars on
+top of the heatmap. There is also a similar \Robject{annotation\_row} argument, which we
+haven't used here, for coloured bars at the side. \Robject{annotation\_colors} is a list
+of named vectors by which we can override the default choice of colours for the annotation
+bars. Finally, with the \Robject{cutree\_rows} argument we cut the row dendrogram into
+four (an arbitrarily chosen number) clusters, and the heatmap shows them by leaving a bit
+of white space in between.  The \Rfunction{pheatmap} function has many further options,
+and if you want to use it for your own data visualisations, it's worth studying them.
+%
+
+
+%--------------------------------------------------
+\subsection{Colour spaces} 
+\label{rgraphics:sec:colorspaces}
+%--------------------------------------------------
+
+Colour perception in humans\cite{Helmholtz:1867} is three-dimensional\footnote{Physically,
+  there is an infinite number of wave-lengths of light, and an infinite number of ways of
+  mixing them.}. There are different ways of parameterizing this space.  Above we already
+encountered the RGB color model, which uses three values in [0,1], for instance at the
+beginning of Section~\ref{rgraphics:sec:ggplot}, where we printed out the contents of
+\Robject{groupColour}:
+%
+```{r groupColour2}
+groupColour[1]
+```
+```{r hexvals, echo = FALSE}
+hexvals <- sapply(1:3, function(i) substr(groupColour[1], i*2, i*2+1))
+decvals <- strtoi(paste0("0x", hexvals))
+```
+%
+Here, `r hexvals[1]` is the hexadecimal representation for the strength of the red colour
+channel, `r hexvals[2]` of the green and `r hexvals[3]` of the green colour channel. In
+decimal, these numbers are `r decvals[1]`, `r decvals[2]` and `r decvals[3]`,
+respectively. The range of these values goes from to 0 to 255, so by dividing by this
+maximum value, an RGB triplet can also be thought of as a point in the three-dimensional
+unit cube. 
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_hcl-1}\\
+\includegraphics[width=\linewidth]{r_hcl-2}
+\caption{\label{rgraphics:fig:hcl}Circles in HCL colorspace. 
+  Upper panel: The luminosity $L$ is fixed to $75$, while the angular
+  coordinate $H$ (hue) varies from 0 to 360 and the radial coordinate $C=0, 10,
+  \ldots, 60$. Lower panel: constant chroma $C=50$, $H$ as above, and varying luminosity 
+  $L=10, 20, \ldots, 90$.}
+\end{marginfigure}
+%
+```{r somecolors, echo = FALSE, results = "hide"}
+library("colorspace")
+
+plothcl = function(h, c, l, what, x0 = 0.5, y0 = 0.5, default.units = "npc", ...) {
+  switch(what,
+         "c" = {
+           stopifnot(length(l)==1)
+           n = length(c)
+         }, 
+         "l" = {
+           stopifnot(length(c)==1)
+           n = length(l)
+         }, 
+         stop("Sapperlot"))
+  
+  cr <- seq(0.1, 0.5, length = n+1)
+  dr <- 0.05 / n
+
+  for (j in seq_len(n)) {
+    r <- c(cr[j]+dr, cr[j+1]-dr)
+    for(i in 1:(length(h)-1)){
+      phi <- seq(h[i], h[i+1], by=1)/180*pi
+      px <- x0 + c(r[1]*cos(phi), r[2]*rev(cos(phi)))
+      py <- y0 + c(r[1]*sin(phi), r[2]*rev(sin(phi)))
+      mycol <- switch(what,
+        "c" = hcl(h=mean(h[i+(0:1)]), c=c[j], l=l),
+        "l" = hcl(h=mean(h[i+(0:1)]), c=c, l=l[j]))
+      grid.polygon(px, py, gp=gpar(col=mycol, fill=mycol), 
+                   default.units=default.units,...)
+    }
+  }
+}
+``` 
+```{r hcl, fig.width = 3.6, fig.height = 3.6, echo = FALSE}
+plothcl( h = seq(0, 360, by=3), c = seq(5, 75, by=10), l = 75,   what="c")
+grid.newpage()
+plothcl( h = seq(0, 360, by=3), c = 55, l = seq(20, 100, by=10), what="l")
+```
+%
+
+The R function \Rfunction{hcl} uses a different coordinate system, which consists of the
+three coordinates hue $H$, an angle in $[0, 360]$, chroma $C$, and lightness $L$ as a
+value in $[0, 100]$. The possible values for $C$ depend on some constraints, but are
+generally between 0 and 255. The \Rfunction{hcl} function corresponds to polar coordinates
+in the CIE-LUV\footnote{CIE: Commission Internationale de l'\'Eclairage -- see
+  e.\,g.\ Wikipedia for more on this.} and is designed for area fills. By keeping chroma
+and luminescence coordinates constant and only varying hue, it is easy to produce color
+palettes that are harmonious and avoid irradiation illusions that make light coloured
+areas look bigger than dark ones. Our attention also tends to get drawn to loud colours,
+and fixing the value of chroma makes the colors equally attractive to our eyes.
+
+There are many ways of choosing colours from a colour
+wheel. \emph{Triads} are three colours chosen equally spaced around
+the colour wheel; for example, $H=0, 120, 240$ gives red, green, and
+blue.  \emph{Tetrads} are four equally spaced colours around the colour
+wheel, and some graphic artists describe the effect as "dynamic".
+\emph{Warm colours} are a set of equally spaced colours close to yellow,
+\emph{cool colours} a set of equally spaced colours close to blue.
+\emph{Analogous colour} sets contain colours from a small segment of the
+colour wheel, for example, yellow, orange and red, or green, cyan and
+blue.  \emph{Complementary colours} are colours diametrically opposite
+each other on the colour wheel. A tetrad is two pairs of
+complementaries.  \emph{Split complementaries} are three colours
+consisting of a pair of complementaries, with one partner split
+equally to each side, for example, $H=60,\,240-30,\,240+30$.  This is
+useful to emphasize the difference between a pair of similar
+categories and a third different one. A more thorough discussion is
+provided in the references~\cite{Mollon:1995,IhakaColorPres}.
+
+\paragraph{Lines vs areas}
+For lines and points, we want that they show a strong contrast to the background, so on a
+white background, we want them to be relatively dark (low lightness $L$). For area fills,
+lighter, more pastell-type colours with low to moderate chromatic content are usually more
+pleasant.
+
+%------------------------------------------------------------
+\section{Data transformations} 
+%------------------------------------------------------------
+Plots in which most points are huddled up in one area,
+with a lot of sparsely populated space, are difficult to read. If the histogram of the
+marginal distribution of a variable has a sharp peak and then long tails to one or both
+sides, transforming the data can be helpful. These considerations apply both to
+\Robject{x} and \Robject{y} aesthetics, and to colour scales. In the plots of this chapter
+that involved the microarray data, we used the logarithmic transformation\footnote{We used
+  it implicitly since the data in the \Rclass{ExpressionSet} object \Robject{x} already
+  come log-transformed.} -- not only in scatterplots like
+Figure~\ref{rgraphics:fig:twodsp1} for the $x$ and $y$-coordinates, but also in
+Figure~\ref{rgraphics:fig:heatmap} for the colour scale that represents the expression
+fold changes. The logarithm transformation is attractive because it has a definitive
+meaning - a move up or down by the same amount on a log-transformed scale corresponds to
+the same multiplicative change on the original scale: $\log(ax)=\log a+\log x$.
+
+Sometimes the logarithm however is not good enough, for instance when the data include
+zero or negative values, or when even on the logarithmic scale the data distribution is
+highly uneven. From the upper panel of Figure~\ref{rgraphics:fig:MA}, it is easy to take away the
+impression that the distribution of \Robject{M} depends on \Robject{A}, with higher
+variances for low \Robject{A}. However, this is entirely a visual artefact, as the lower
+panel confirms: the distribution of \Robject{M} is independent of \Robject{A}, and the
+apparent trend we saw in the upper panel was caused by the higher point density at
+smaller \Robject{A}.
+% 
+```{r MA1, fig.width = 3.75, fig.height = 3.75, dev = "png"}
+A <- exprs(x)[,1]
+M <- rnorm(length(A))
+qplot(A, M) 
+qplot(rank(A), M)
+```
+%
+\begin{ques} Can the visual artefact be avoided by using a density- or binning-based
+plotting method, as in Figure~\ref{rgraphics:fig:twodsp6}?
+\end{ques}
+\begin{ques}
+Can the rank transformation also be applied when choosing colour scales e.\,g.\
+  for heatmaps? What does \emph{histogram equalization} in image processing do?
+\end{ques}
+
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_MA1-1}\\
+\includegraphics[width=\linewidth]{r_MA1-2}
+\caption{The effect of rank transformation on the visual perception of dependency.}
+\label{rgraphics:fig:MA}
+\end{marginfigure}
+
+
+%------------------------------------------------------------
+\section{Saving Figures}
+%------------------------------------------------------------
+
+Just as important as plotting figures is saving them for later use.
+
+\CRANpkg{ggplot2} has a built-in plot saving function called
+\Rfunction{ggsave}, which if run by itself defaults to saving the last
+plot you made with the size of the graphics device that it was/is open
+in.
+
+```{r plotsave1}
+ggsave("myplot1.png")
+```
+
+Or you can specify a particular plot that you want to save, say, the sunspot plot from
+earlier.
+
+```{r plotsave2}
+ggsave("myplot2.pdf", plot = sp)
+```
+```{r plotsave3, echo = FALSE, results = "hide"}
+file.remove("myplot1.png", "myplot2.pdf")
+```
+ 
+There are two major ways of storing plots: vector graphics and raster (pixel) graphics. In
+vector graphics, the plot is stored as a series of geometrical primitives such as points,
+lines, curves, shapes and typographic characters. The prefered format in R for saving
+plots into a vector graphics format is PDF. In raster graphics, the plot is stored in a
+dot matrix data structure. The main limitation of raster formats is their limited
+resolution, which depends on the number of pixels available; in R, the most commonly used
+device for raster graphics output is \Rfunction{png}.  Generally, it's preferable to save
+your graphics in a vector graphics format, since it is always possible later to convert a
+vector graphics file into a raster format of any desired resolution, while the reverse is
+in principle limited by the resolution of the original file. And you don't want the
+figures in your talks or papers look poor because of pixelisation artefacts!
+
+%-----------------------------------------------------------
+\section{Biological data with ggbio}
+%-----------------------------------------------------------
+
+\fixme{Expand this section... do something more interesting}
+
+A package that can be really useful for biological data is an offshoot of
+\CRANpkg{ggplot2} made for biology-specific plots called \Biocpkg{ggbio}.  One example is
+plotting and highlighting \textbf{ideograms}\index{ideopram}\footnote{The term ideogram
+generally means a graphic that represents a concept, specifically in biology we usually
+are referring to plots of the chromosome, like in Figure \ref{rgraphics:fig:ideogram}.}
+
+Load the ideogram cytoband information for the hg19 build of the human genome
+%
+```{r ideo, fig.width=4, fig.height=1.5}
+library("ggbio")
+data( hg19IdeogramCyto, package = "biovizBase" ) 
+plotIdeogram( hg19IdeogramCyto, subchr = "chr1" )
+```
+%
+\begin{marginfigure}
+\includegraphics[width=\linewidth]{r_ideo-1}
+\caption{Chromosome 1 of the human genome: ideogram plot.}
+\label{rgraphics:fig:ideogram}
+\end{marginfigure}
+
+%------------------------------------------------------------
+\section{Recap of this chapter}
+%------------------------------------------------------------
+
+\begin{itemize}
+\item
+  You have had an introduction to the base plotting functions in R. 
+  They are widely used and can be convenient for quick data exploration.
+\item You should now be comfortable making beautiful, versatile and easily extendable 
+  plots using \CRANpkg{ggplot2}'s \Rfunction{qplot} or \Rfunction{ggplot} functions.
+\item Don't be afraid of setting up your data for faceting -- this is a great
+  quick way to look at many different ways to slice the data in different wats
+\item Now you are prepared to explore \CRANpkg{ggplot2} and plotting in general on your
+  own.
+\end{itemize}
+
+%------------------------------------------------------------
+\section{Exercises}
+%------------------------------------------------------------
+\begin{ex}[themes]
+Explore how to change the visual appearance of plots with themes. For example:
+```{r theme_bw, eval=FALSE}
+qplot(1:10,1:10)
+qplot(1:10,1:10) + theme_bw() 
+```
+\end{ex}
+
+\begin{ex}[colour names in R] Have a look at
+\url{http://research.stowers-institute.org/efg/R/Color/Chart}
+\end{ex}
+
+\begin{ex}[ggxkcd]
+On a lighter note, you can even modify \CRANpkg{ggplot2} to make plots in
+the style of the popular webcomic \href{http://www.xkcd.com}{XKCD}.
+You do this through manipulating the font and themes of ggplot2 objects.
+See \url{http://stackoverflow.com/questions/12675147/how-can-we-make-xkcd-style-graphs-in-r}.
+\begin{marginfigure}
+\centering
+\includegraphics[width=\linewidth]{xkcdgraph}\\
+\includegraphics[width=\linewidth]{xkcdexample}
+\end{marginfigure}
+\end{ex}
+
+%--------------------------------------------------
+\section{Session Info}
+%--------------------------------------------------
+```{r sessInfo, echo=FALSE, results = "asis"}
+toLatex(sessionInfo())
+```

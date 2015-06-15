@@ -2,13 +2,10 @@
 title: "End-to-end RNA-Seq workflow"
 author: "Michael Love, Simon Anders, Wolfgang Huber"
 date: "16 June 2015" 
-output: 
-- BiocStyle::pdf_document
-- BiocStyle::html_document
 ---
 
 <!-- to compile this:
-     library("rmarkdown"); render("rnaseqCSAMA.Rmd", output_format="all")
+     library("knitr"); knit2html("rnaseqCSAMA.Rmd")
 -->
 
 <!--
@@ -21,7 +18,28 @@ output:
 library("knitr")
 library("BiocStyle")
 opts_chunk$set(message = FALSE, error = TRUE, warning = TRUE)
+BiocStyle::markdown()
 ```
+
+# End-to-end RNA-Seq workflow
+
+Michael Love [1], Simon Anders [2], Wolfgang Huber [2]
+
+[1] Department of Biostatistics, Dana-Farber Cancer Institute and
+Harvard T.H. Chan School of Public Health, Boston, US;
+
+[2] European Molecular Biology Laboratory (EMBL), Heidelberg, Germany.
+
+# Contents
+
+* [Counting reads](#count)
+* [Building a DESeqDataSet](#construct)
+* [Visual exploration](#eda)
+* [Differential expression](#de)
+* [Diagnostic plots](#diagnostic)
+* [Annotation](#annotate)
+* [ReportingTools](#report)
+* [Ease of exchanging methods](#methods)
 
 # Introduction
 
@@ -120,6 +138,8 @@ cat files | parallel -j 7 samtools view -bS aligned/{}.Aligned.out.sam -o aligne
 
 The BAM files for a number of sequencing runs can then be used to
 generate count matrices, as described in the following section.
+
+<a id="count"></a>
 
 # Counting reads
 
@@ -340,6 +360,8 @@ We will continue, using `r Biocpkg("DESeq2")`. The *SummarizedExperiment* object
 all we need to start our analysis. In the following section we will
 show how to use it to create the data object used by `r Biocpkg("DESeq2")`.
 
+<a id="construct"></a>
+
 # The *DESeqDataSet*, column metadata, and the design formula
 
 Bioconductor software packages often define and use a custom class for
@@ -388,7 +410,6 @@ In the following sections, we will demonstrate the construction of the
 
 * from a *SummarizedExperiment* object created by, e.g.,
   *summarizeOverlaps* in the above example
-
 * more generally, from a count matrix and a column metadata table
   which have been loaded into R 
 
@@ -512,7 +533,6 @@ We now have all the ingredients to prepare our data object in a form
 that is suitable for analysis, namely:
 
 * `countMatrix`: a table with the read counts
-
 * `coldata`: a table with metadata on the count matrix's columns
 
 To now construct the data object from the matrix of counts and the
@@ -526,6 +546,8 @@ metadata table, we use:
 
 We will continue with the object generated from the
 *SummarizedExperiment* section. 
+
+<a id="eda"></a>
 
 # Visually exploring the dataset
 
@@ -752,6 +774,8 @@ mds <- cbind(mds, as.data.frame(colData(dds)))
 qplot(X1,X2,color=dex,shape=cell,data=mds)
 ```
 
+<a id="de"></a>
+
 # Differential expression analysis
 
 It will be convenient to make sure that `untrt` is the first level in
@@ -856,7 +880,6 @@ about which set of genes are considered significant:
 
 * lower the false discovery rate threshold (the threshold on `padj` in
   the results table)
-
 * raise the log2 fold change threshold from 0 using the `lfcThreshold`
   argument of *results*. See the *DESeq2* vignette for a demonstration
   of the use of this argument.
@@ -960,6 +983,8 @@ order is to add a `-` sign. Alternatively, you can use the argument
 ```{r}
 head(resSig[ order( -resSig$log2FoldChange ), ])
 ```
+
+<a id="diagnostic"></a>
 
 # Diagnostic plots
 
@@ -1166,7 +1191,9 @@ and hence independent. The independent filtering software used inside
 contains a reference to a paper describing the statistical foundation
 for independent filtering.
 
-# Annotation: adding gene names
+<a id="annotate"></a>
+
+# Annotation packages to add gene names
 
 Our result table only uses Ensembl gene IDs, but gene names may be
 more informative. Bioconductor's annotation packages help with mapping
@@ -1212,9 +1239,7 @@ resOrdered <- res[order(res$padj),]
 head(resOrdered)
 ```
 
-# Exporting results
-
-## Plain text output
+# Exporting plain text results
 
 You can easily save the results table in a CSV file, which you can
 then load with a spreadsheet program such as Excel. The call to
@@ -1226,7 +1251,9 @@ processed by *write.csv*.
 write.csv(as.data.frame(resOrdered), file="results.csv")
 ```
 
-## ReportingTools output (dynamic HTML documents)
+<a id="report"></a>
+
+# ReportingTools output (dynamic HTML documents)
 
 Another more sophisticated package for exporting results from various
 Bioconductor analysis packages is the `r Biocpkg("ReportingTools")` package.
@@ -1296,6 +1323,8 @@ publish(resReport, htmlRep, DataSet=ddsReport,
         n=50, factor=dds$dex)
 finish(htmlRep)
 ```
+
+<a id="methods"></a>
 
 # Ease of exchanging methods
 

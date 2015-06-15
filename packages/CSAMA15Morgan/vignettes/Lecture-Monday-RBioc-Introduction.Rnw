@@ -225,4 +225,22 @@ assay(se)[,se$Treatment == "Control"]  # Control counts
 
 \end{frame}
 
+\begin{frame}{Acknowledgments}
+  \begin{itemize}
+  \item Core (Seattle): \textbf{Sonali Arora}, Marc Carlson, Nate Hayden,
+    Valerie Obenchain, Herv\'e Pag\`es, Paul Shannon, Dan Tenenbaum.
+  \item The research reported in this presentation was supported by
+    the National Cancer Institute and the National Human Genome
+    Research Institute of the National Institutes of Health under
+    Award numbers U24CA180996 and U41HG004059, and the National
+    Science Foundation under Award number 1247813. The content is
+    solely the responsibility of the authors and does not necessarily
+    represent the official views of the National Institutes of Health
+    or the National Science Foundation.
+  \end{itemize}
+  \medskip\par
+  \href{http://bioconductor.org/BioC2015/}{BioC 2015} Annual
+  Conference, Seattle, WA, 20-22 July.
+\end{frame}
+
 \end{document}

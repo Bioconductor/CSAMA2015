@@ -5,9 +5,11 @@ date: "12 Jun 2015"
 output:
   ioslides_presentation:
     css: style.css
+runtime: shiny
 ---
 
 # Basics of sequencing-based Variant Calling
+
 ## Single Nucleotide Variants (SNVs)
 
 ![SNVsOverview][snvOV]
@@ -32,19 +34,33 @@ T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
 ## Certainty and Sequencing Depth
 In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
 
-## Certainty and Sequencing Depth
-```{r,echo = FALSE}
-plot(  seq(0,10)/10, dbinom(x = seq(0,10), size = 10, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 10")
-```
 
 ## Certainty and Sequencing Depth
-```{r,echo = FALSE}
-plot(  seq(0,20)/20, dbinom(x = seq(0,20), size = 20, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 20")
-```
 
-## Certainty and Sequencing Depth
-```{r,echo = FALSE}
-plot(  seq(0,50)/50, dbinom(x = seq(0,50), size = 50, prob = 0.5), type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density", main = "Example with sequencing depth 50")
+```{r, echo=FALSE, eval = TRUE}
+inputPanel(
+  sliderInput("s", label = "Sequencing Depth:",
+              min = 10, max = 100, step = 10, value = 20),
+  
+  sliderInput("af", label = "Expected allele frequency:",
+              min = 0.1, max = 1, value = 0.5, step = 0.1),
+  
+  checkboxInput("count", label = "Show Allele Frequency", value = TRUE)
+)
+
+renderPlot({
+  if(input$count){
+    d <- input$s
+  }else{
+    d <- 1
+  }
+  plot(
+    seq(0,input$s)/d,
+    dbinom(x = seq(0, input$s), size = input$s, prob = input$af),
+    type = "h", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density",
+    main = paste( "Example with sequencing depth", input$s )
+    )
+})
 ```
 
 ## Somatic Variants vs. Germline Variants
@@ -63,12 +79,13 @@ When dealing with paired cancer samples we ask:
 
 ## Plotting SNVs - Comparative Example
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, eval=TRUE,}
 require(h5vc)
 tallyFile <- system.file( "extdata", "example.tally.hfs5", package = "h5vcData" )
 sampleData <- getSampleData( tallyFile, "/ExampleStudy/16" )
 position <- 29983015
-windowsize <- 1000
+
+windowsize <- 2000
 vars <- h5dapply( # Calling Variants
   filename = tallyFile,
   group = "/ExampleStudy/16",
@@ -82,26 +99,66 @@ vars <- h5dapply( # Calling Variants
 vars <- do.call( rbind, vars ) # merge the results from all blocks by row
 
 windowsize = 30
+require(GenomicRanges)
+ranges = GRanges("16", ranges = IRanges(start = vars$Start - windowsize, end = vars$End + windowsize), strand = "*")
 
-data <- h5readBlock(
+dataList <- h5dapply(
   filename = tallyFile,
-  group = "/ExampleStudy/16",
+  group = "/ExampleStudy",
   names = c("Coverages", "Counts", "Deletions", "Reference"),
-  range = c(position - windowsize, position + windowsize)
-  )
-
-p <- mismatchPlot(
-  data = data,
-  sampledata = sampleData,
-  samples = subset(sampleData, Patient == "Patient5")$Sample,
-  position = position,
-  windowsize = windowsize
+  range = ranges
 )
-print(p)
+
+pll <- mismatchPlot(
+  data = dataList[["16"]],
+  sampledata = sampleData
+)
+print(pll)
+```
+
+## Telling the good from the bad
+
+![GoodSNV][good]
+
+## Telling the good from the bad
+
+![BadSNV][bad]
+
+## Variant File Formats {.smaller}
+```{r, message=FALSE}
+require(VariantAnnotation)
+vcf <- readVcf(file = "1000g.subset.vcf", genome = "hg19")
+vcf
+```
+
+## Variant File Formats {.smaller}
+```{r}
+head(rowRanges(vcf))
+```
+
+## Variant File Formats {.smaller}
+```{r}
+geno(vcf)$GT[1:3,1089:1093]
+```
+
+```{r}
+info(vcf)[1:3,grep(x = colnames(info(vcf)), pattern = "AF")]
+```
+
+## Ensembl Variant Effect Predictor
+
+![vep][vep]
+
+## Ensembl Variant Effect Predictor
+
+```{r, eval = FALSE}
+source("http://bioconductor.org/biocLite.R")
+biocLite("ensemblVEP")
 ```
 
 [snvOV]: Illustrations/SNVOverview.png "Overview of SNV types"
 [snvData]: Illustrations/SNVdata.png "Overview of WGS/WEX SNV Data"
 [InDelOV]: Illustrations/InDelOverview.png "Overview of InDel types"
-
-
+[good]: Illustrations/CSMD3.png "A Good Variant"
+[bad]: Illustrations/PABPC1.png "A Bad Variant"
+[vep]: Illustrations/vep.png "the VEP"

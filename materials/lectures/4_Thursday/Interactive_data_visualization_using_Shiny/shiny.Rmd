@@ -16,18 +16,20 @@ temporal <- function(expr, ms=1000, domain=getDefaultReactiveDomain()) {
 
 ## What is Shiny?
 
-Web application framework for R from RStudio
+Web application framework for **R** from **RStudio**
 
 <p align="center">http://shiny.rstudio.com/</p>
+
+<br/>
 
 Shiny combines the computational power of R with the interactivity of the modern web
 
 - build interactive web applications with R easily
 - no HTML or JavaScript knowledge required
-- reactive programming model:<br/>
-  output changes instantly on input modification
+- reactive programming:
+  output changes instantly when input is modified
 
-## Slide with Interactive Plot
+## Interactive data visualization
 
 ```{r, echo=FALSE}
 inputPanel(
@@ -49,12 +51,51 @@ renderPlot({
 
 ## Shiny widgets
 
-Shiny widgets gallery
-
-
-
 ```{r, echo = FALSE}
 
+fluidPage(
+  fluidRow(
+    column(4,
+      h3("Checkbox group"),
+      wellPanel(checkboxGroupInput("checkGroup", label = "", choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1))
+    ),
+    column(4,
+      h3("Radio buttons"),
+      wellPanel(radioButtons("radio", label = "", choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1))
+    ),
+    column(4,
+      h3("Select box"),
+      wellPanel(selectInput("select", label = "", choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1))
+    )
+  ),
+
+  fluidRow(
+    column(4,
+      h3("Buttons"),
+      wellPanel(
+        actionButton("action", label = "Action"),
+        br(),
+        br(),
+        submitButton("Submit")
+      )
+    ),
+    column(4,
+      h3("Sliders"),
+      wellPanel(
+        sliderInput("slider1", label = "", min = 0, max = 100, value = 50),
+        sliderInput("slider2", label = "", min = 0, max = 100, value = c(25, 75))
+      )
+    ),
+    column(4,
+      h3("Numeric / Text"),
+      wellPanel(
+        numericInput("num", label = "", value = 1),
+        textInput("text", label = "", value = "Enter text...")
+      )
+    )
+  )
+
+)
 ```
 
 ## <!--Reactive tables and data frames-->
@@ -112,17 +153,15 @@ A way of building programs for **values that change over time**
 numericInput('x', 'Please enter a number', 5)
 ```
 
-(The value of `x` is now `r renderText(input$x)`.)
+(The value of `x` is now `r renderText(input$x)`)
+
+## Reactive programming model
+
+<br/><br/><br/>
+<p align="center">![Reactivity](reactive.png)</p>
 
 <!--
-
-## Slide with R Code and Output
-
-```{r}
-summary(cars)
-```
-
-## <!--Interactive MA plot-->
+## Interactive MA plot
 
 ```{r, echo = FALSE}
 shinyAppDir("/home/oles/teaching/CSAMA2015/materials/lectures/4_Thursday/Interactive_data_visualization_using_Shiny/plotMA")

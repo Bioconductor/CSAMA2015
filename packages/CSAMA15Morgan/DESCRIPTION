@@ -1,5 +1,5 @@
 Package: CSAMA15Morgan
-Version: 0.0.2
+Version: 0.0.3
 Title: CSAMA 2015 Lab and Lecture Resources for Martin Morgan
 Description: This package contains lab and lecture vignettes, data,
     and short functions for use in parts of the CSAMA 2015 course lead
@@ -7,7 +7,11 @@ Description: This package contains lab and lecture vignettes, data,
 Authors@R: c(
     person("Martin", "Morgan", email="mtmorgan@fredhutch.org", role="cre"),
     person("Sonali", "Arora", email="sarora@fredhutch.org", role="ctb"))
-Suggests: BiocStyle, knitr, rmarkdown
+Suggests: BiocStyle, knitr, rmarkdown, ggplot2, Biostrings, GenomicRanges,
+  Biostrings, IRanges, BSgenome.Hsapiens.UCSC.hg19, Rsamtools,
+  RNAseqData.HNRNPC.bam.chr14, TxDb.Hsapiens.UCSC.hg19.knownGene,
+  BiocParallel, org.Hs.eg.db, TxDb.Hsapiens.UCSC.hg19.knownGene, biomaRt,
+  rtracklayer, Gviz, AnnotationHub, microbenchmark, compiler
 VignetteBuilder: knitr
 License: Artistic-2.0
 URL: http://www.huber.embl.de/csama/,

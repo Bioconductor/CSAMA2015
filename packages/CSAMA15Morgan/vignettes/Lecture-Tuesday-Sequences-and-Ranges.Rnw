@@ -23,7 +23,7 @@ options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
   \item[Biostrings] General purpose biological sequence
     representation.
   \item[BSgenome] Whole-genome representation.
-  \item[ShortRead] High-throughput sequening.
+  \item[ShortRead] High-throughput sequencing.
   \end{description}
 \end{frame}
 
@@ -51,7 +51,7 @@ options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
 \begin{frame}{Sequences: common classes}
   \begin{description}
   \item[DNAString] Single DNA sequence, e.g., chromosome
-  \item[DNAStringSet] Vector of DNA seqeucnes.  Actually,
+  \item[DNAStringSet] Vector of DNA sequences.  Actually,
     \Rcode{XString}, \Rcode{XStringSet}: \Rcode{X} could be DNA, RNA, AA)
   \item[BSgenome] Collection of (large) DNA sequences
   \item[ShortReadQ] High-throughput reads \& their qualities
@@ -68,8 +68,10 @@ options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
   \bigskip\par
   Use -- effectively manage large data
   \begin{itemize}
-  \item \emph{Restrict} input to specific genomic coordinates
-  \item \emph{Iterate} through large files in chunks
+  \item \emph{Restrict} input to specific genomic locations (specified
+    by \Rcode{GRanges()}).
+  \item \emph{Iterate} through large files in chunks (see
+    \Rcode{GenomicFiles::reduceByYield()})
   \end{itemize}
 \end{frame}
 
@@ -148,9 +150,9 @@ Hits object with 2 hits and 0 metadata columns:
   \item[import] (\Biocpkg{rtracklayer}) for BED, GTF, and other common
     web file import functions. \Rclass{BEDFile}, \Rclass{GTFFile}, etc.
   \item[readGAlignments / readGAlignmentsList]
-    (\Biocpkg{GenomicAlignments}) for algined reads in BAM files
+    (\Biocpkg{GenomicAlignments}) for aligned reads in BAM files
   \item[BamFile] (\Biocpkg{Rsamtools}) for lower-level access to BAM
-    files, e.g., iteration
+    files, e.g., restriction and iteration
   \end{description}
 \end{frame}
 
@@ -173,23 +175,37 @@ Hits object with 2 hits and 0 metadata columns:
 \section{Demos}
 
 \begin{frame}{Demos}
-  \begin{enumerate}
-  \item Genome sequence and gene model packages
-  \item GC content of exons in UCSC hg19 knownGene track
-  \item liftOver from hg19 to hg38 coordinates
-    %%
-  \item findOverlaps between aligned reads and known genes
-  \item Working with \Rclass{Hits} object
-  \item Genes nearest transcription factor binding sites
-  \end{enumerate}
+  See markdown document.
 \end{frame}
 
 \begin{frame}{Other resources}
   \begin{itemize}
-  \item Workflows \& vignettes
-  \item \Biocpkg{GenomicRanges} `cheat sheet'
-  \item Course material
+  \item \href{http://bioconductor.org/help/workflows/}{Workflows} \&
+    package vignettes
+  \item \Biocpkg{GenomicRanges} and other
+    `\href{https://github.com/mikelove/bioc-refcard}{cheat sheets}'
+  \item \href{http://bioconductor.org/help/course-materials/}{Course
+      material}
   \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Acknowledgments}
+  \begin{itemize}
+  \item Core (Seattle): \textbf{Sonali Arora}, Marc Carlson, Nate Hayden,
+    Valerie Obenchain, Herv\'e Pag\`es, Paul Shannon, Dan Tenenbaum.
+  \item The research reported in this presentation was supported by
+    the National Cancer Institute and the National Human Genome
+    Research Institute of the National Institutes of Health under
+    Award numbers U24CA180996 and U41HG004059, and the National
+    Science Foundation under Award number 1247813. The content is
+    solely the responsibility of the authors and does not necessarily
+    represent the official views of the National Institutes of Health
+    or the National Science Foundation.
+  \end{itemize}
+  \medskip\par
+  \href{http://bioconductor.org/BioC2015/}{BioC 2015} Annual
+  Conference, Seattle, WA, 20-22 July.
 \end{frame}
 
 \end{document}

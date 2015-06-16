@@ -186,6 +186,8 @@ Hits object with 2 hits and 0 metadata columns:
     `\href{https://github.com/mikelove/bioc-refcard}{cheat sheets}'
   \item \href{http://bioconductor.org/help/course-materials/}{Course
       material}
+  \item Support site
+    \href{https://support.bioconductor.org/t/Tutorials/}{tutorials}
   \end{itemize}
 \end{frame}
 

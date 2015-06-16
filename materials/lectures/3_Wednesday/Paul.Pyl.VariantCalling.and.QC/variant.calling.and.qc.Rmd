@@ -48,7 +48,7 @@ T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
 ## Certainty and Sequencing Depth
 In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
 
-## Certainty and Sequencing Depth
+## Certainty and Sequencing Depth {.smaller}
 
 ```{r, echo=FALSE, eval = TRUE}
 inputPanel(
@@ -56,7 +56,7 @@ inputPanel(
               min = 10, max = 100, step = 10, value = 20),
   
   sliderInput("af", label = "Expected allele frequency:",
-              min = 0.1, max = 1, value = 0.5, step = 0.1),
+              min = 0.1, max = 1, value = 0.5, step = 0.01),
   
   checkboxInput("count", label = "Show Allele Frequency", value = TRUE)
 )
@@ -67,11 +67,18 @@ renderPlot({
   }else{
     d <- 1
   }
+  dens1 <- dbinom(x = seq(0, input$s), size = input$s, prob = input$af)
+  dens2 <- dbinom(x = seq(0, input$s), size = input$s, prob = 1/3)
   plot(
     seq(0,input$s)/d,
-    dbinom(x = seq(0, input$s), size = input$s, prob = input$af),
-    type = "h", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density",
-    main = paste( "Example with sequencing depth", input$s )
+    dens1,
+    type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density",
+    main = paste( "Example with sequencing depth", input$s ), ylim = c(0,max(c(dens1, dens2))*1.1)
+    )
+  lines(
+    seq(0,input$s)/d,
+    dens2,
+    type = "l", col = "red"
     )
 })
 ```

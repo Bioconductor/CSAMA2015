@@ -8,6 +8,7 @@ output:
 runtime: shiny
 ---
 
+# A very general overview of the field of metagenomics
 ## What is metagenomics
 
 - There are microbes **everywhere**
@@ -36,30 +37,77 @@ We will focus on sequencing-based approaches, i.e. DNA and RNA sequencing
 
 *Image taken from [alimetrics.net](http://www.alimetrics.net/en/index.php/dna-sequence-analysis)*
 
-## Estimating Bacterial Abundances
+## Estimating Gacterial and Gene Abundances {.smaller}
 
-Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sample. Default Workflow:
+Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sample. Example Workflow:
 
-## Slide with Interactive Plot
+<div style = "width: 44%; float: left;">
+![pipeline][pipeline]
+</div>
+<div style = "width: 52%; float: right;">
+- Extracting and sequencing DNA
+    - potentially use size selection to enrich for bacteria
+- Sequencing of DNA (e.g. Illumina HiSeq or MiSeq)
+- Pipeline
+    - Filtering out reads mapping to e.g. the host, contaminants, ...
+    - Assembly / Clustering of sequences and mapping to known sequences
+    - generation of abundance tables (e.g. Samples x OTU or Samples x Genes)
+</div>
+<br style="clear: both;"/>
 
-```{r, echo=FALSE}
+## The integrated gene catalogue (Human Gut Microbiome)
+- 1267 Samples
+- 337 Genera
+- ~9.9 million genes
+
+<div style = "width: 80%; margin: auto;">
+![IGC][IGC]
+</div>
+
+## Data Exploration {.smaller}
+
+```{r, echo=FALSE, message = FALSE, warning = FALSE}
+require(MetaHDF5)
+file = "example.h5"
+study = "IGC"
+sampleAnnotation <- fetchAnnotation(file, study, entity = "Samples")
+sampleChoice <- seq(1,nrow(sampleAnnotation))
+names(sampleChoice) <- sampleAnnotation$Name
+otuAnnotation <- fetchAnnotation(file, study, entity = "OTU")
+otuChoice <- seq(1,nrow(otuAnnotation))
+names(otuChoice) <- otuAnnotation$Name
 inputPanel(
-  selectInput("n_breaks", label = "Number of bins:",
-              choices = c(10, 20, 35, 50), selected = 20),
-  
-  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
-              min = 0.2, max = 2, value = 1, step = 0.2)
+  selectInput("sample", label = "Sample:",
+              choices = sampleChoice),
+  checkboxInput("normOTU", label = "Normalised Counts")
 )
 
 renderPlot({
-  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
-       xlab = "Duration (minutes)", main = "Geyser eruption duration")
-  
-  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
-  lines(dens, col = "blue")
+  type = ifelse(input$normOTU, "Normalised", "Relative")
+  plot(
+    fetchAbundance(file, study, type = type, entity = "OTU", index = list(NULL, input$sample))[,1],
+    type = "h", ylab = names(sampleChoice)[input$Sample])
+})
+```
+
+## Data Exploration {.smaller}
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+inputPanel(
+  selectInput("otu", label = "OTU:",
+              choices = otuChoice),
+  checkboxInput("norm", label = "Normalised Counts")
+)
+
+renderPlot({
+  type = ifelse(input$norm, "Normalised", "Relative")
+  plot(
+    fetchAbundance(file, study, type = type,entity = "OTU", index = list(input$otu, NULL))[1,],
+    type = "h", ylab = names(otuChoice)[input$otu])
 })
 ```
 
 
-
 [16SrRNA]: 16SrRNA.Structure.png "16S rRNA Structure"
+[pipeline]: Pipeline.png "Pipeline Example"
+[IGC]: IGC.png "IGC paper"

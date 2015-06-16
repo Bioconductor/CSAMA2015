@@ -14,8 +14,14 @@ runtime: shiny
 - There are microbes **everywhere**
 - Let's sequence them!
 - Typical applications:
-  - Human health: microbiome of the gut, skin, lung, oral cavity, etc.
-  - Environment: soil, lakes, oceans, ...
+    - Human health: microbiome of the gut, skin, lung, oral cavity, etc.
+    - Environment: soil, lakes, oceans, ...
+
+## There are a lot of Bacteria
+
+![tol][tol]
+
+*Thanks, Wikipedia!*
 
 ## Technologies
 
@@ -37,9 +43,9 @@ We will focus on sequencing-based approaches, i.e. DNA and RNA sequencing
 
 *Image taken from [alimetrics.net](http://www.alimetrics.net/en/index.php/dna-sequence-analysis)*
 
-## Estimating Gacterial and Gene Abundances {.smaller}
+## Estimating Bacterial and Gene Abundances {.smaller}
 
-Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sample. Example Workflow:
+Whole Metagenome Sequencing (WMGS) is the sequencing of all DNA found in a sample. Example Workflow:
 
 <div style = "width: 44%; float: left;">
 ![pipeline][pipeline]
@@ -55,6 +61,18 @@ Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sampl
 </div>
 <br style="clear: both;"/>
 
+## Human Microbiome Studies - MetaHIT (metahit.eu)
+![MetaHIT][MetaHIT]
+
+## Human Microbiome Studies - HMP (hmpdacc.org)
+<div style = "width: 45%; float: left;">
+![hmp][hmp]
+</div>
+<div style = "width: 45%; float: right;">
+![hmps][hmps]
+</div>
+<br style = "clear: both;"/>
+
 ## The integrated gene catalogue (Human Gut Microbiome)
 - 1267 Samples
 - 337 Genera
@@ -63,6 +81,74 @@ Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sampl
 <div style = "width: 80%; margin: auto;">
 ![IGC][IGC]
 </div>
+
+## Online Data Repositories
+
+[Qiita](http://qiita.microbio.me)
+
+- Host many publicly available data-sets
+- [BIOM](http://biom-format.org/) format, which is an emerging standard for representing microbial abundance data
+- Very varied, from bees to soil to human gut and many more
+
+## R Packages
+- biom: for reading in BIOM-formatted files (**doesn't work with the newer HDF5-based version**)
+- phyloseq: for visualisation and basic analyses
+    - provides interface to DESeq2 for differential abundance analysis
+- metagenomeseq: for differential OTU analysis
+    - uses a zero-inflated gaussian as the model distribution
+
+## Reads to Counts
+- 16S rRNA reads are mapped to known sequence
+    - cluster the fragments (or reads when using single-end seuqencing) by sequence similarity (e.g. $>97\%$)
+
+![16swf][16swf]
+
+## Reads to Counts
+- Whole Metagenome Sequencing Data is clustered / assembled
+    - Clusters can be mapped to metegenomic genes from the IGC
+    - OTU abundances can be estimated from a set of representative marker genes (~10 genes)
+        - need to be present in the species
+        - need to be single-copy
+
+## Genomic Variability
+- Bacterial genomes can be very dynamic
+    - members of the same species can have large portions of their genome private (non-shared)
+    - horizontal gene transfer introduces variability
+
+## Horizontal Gene Transfer
+<div style = "width: 60%; margin: auto;">
+![hgt][hgt]
+</div>
+
+## Alternative Species Definition
+Assigning metagenomic genes to species (or taxa in general) is a complicated problem!
+
+We can use the concept of co-abundance groups (CAG) to define sets of genes that we think might be from the same species
+<div style = "width: 80%; margin: auto;">
+![CAG][CAG]
+</div>
+
+## Properties of the Data
+- Similar to RNASeq (counts per OTU)
+- usually converted to relative abundances (sum to 1 in a sample)
+    - Problems with compositional data (large effects can dominate the comparison)
+```{r, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+d <- data.frame(
+  Sample1 = c(100,10,12,7,23),
+  Sample2 = c(23, 9,13,8,26),
+  Species = letters[1:5]
+  )
+require(reshape)
+dm <- melt(d)
+colnames(dm) <- c("Species", "Sample", "Abundance")
+dr <- dm
+dm$Type = "Absolute"
+dr$Abundance <- dr$Abundance / c( rep(sum(d$Sample1), 5), rep(sum(d$Sample2), 5))
+dr$Type = "Relative"
+dp <- rbind(dm, dr)
+require(ggplot2)
+ggplot(dp, aes(x = Species, y = Abundance, color = Sample)) + geom_point(size = 6) + facet_wrap(~ Type, scales = "free") + theme_bw() + theme(text = element_text(size = 14, family = "Monaco"))
+```
 
 ## Data Exploration {.smaller}
 
@@ -107,7 +193,59 @@ renderPlot({
 })
 ```
 
+## Example Data
+The `phyloseq` package comes bundled with some example data:
+```{r, echo=FALSE, message=FALSE}
+require(phyloseq)
+```
+
+Data | Description
+-----|-------------
+GlobalPatterns | Global patterns of 16S rRNA diversity at a depth of millions of sequences per sample (2011)
+enterotype | Enterotypes of the human gut microbiome (2011)
+esophagus | Small example dataset from a human esophageal community (2004)
+soilrep | Reproducibility of soil microbiome data (2011)
+
+## Example Data
+
+```{r}
+data(GlobalPatterns)
+class(GlobalPatterns)
+```
+
+## Example Data
+Objects of the `phyloseq`-class can be accessed, visualised and modified in many ways:
+
+```{r, echo=FALSE}
+require(phyloseq)
+data(GlobalPatterns)
+gpt <- subset_taxa(GlobalPatterns, Kingdom=="Bacteria")
+gpt <- prune_taxa(names(sort(taxa_sums(gpt),TRUE)[1:300]), gpt)
+#plot_heatmap(gpt, sample.label="SampleType")
+plot_richness(gpt, color = "SampleType", measures = "Shannon", x = "SampleType") + geom_point(size = 5) + theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+## Example Data
+Objects of the `phyloseq`-class can be accessed, visualised and modified in many ways:
+<div style = "width: 80%; margin: auto;">
+![hmap][hmap]
+</div>
+
+## Example Data
+```{r, echo=FALSE}
+plot_ordination(gpt, ordinate(gpt, method = "PCoA"), color = "SampleType") + geom_point(size = 6)
+```
+
+## The End
 
 [16SrRNA]: 16SrRNA.Structure.png "16S rRNA Structure"
+[16swf]: 16s.workflow.png "16S workflow example"
 [pipeline]: Pipeline.png "Pipeline Example"
 [IGC]: IGC.png "IGC paper"
+[MetaHIT]: MetaHIT.png "MetaHIT Website"
+[hmp]: hmp.png "HMP Logo"
+[hmps]: hmp_sites.jpg "HMP Sites"
+[tol]: CollapsedtreeLabels-simplified.wikipedia.svg "Tree of Life - Simple - Wikipedia"
+[hgt]: Horizontal-gene-transfer.jpg "Horizontal Gene Transfer - Wikipedia"
+[CAG]: CAG.png "Co-abundance group illustration"
+[hmap]: hmap.png "Heatmap of Example Data"

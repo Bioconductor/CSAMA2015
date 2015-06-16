@@ -1,8 +1,10 @@
 ---
-title: "Meteganeomics Primer"
+title: "Metagenomics Primer"
 author: "Paul Theodor Pyl"
 date: "15 Jun 2015"
-output: ioslides_presentation
+output:
+  ioslides_presentation:
+    css: style.css
 runtime: shiny
 ---
 
@@ -19,8 +21,24 @@ runtime: shiny
 - DNA Sequencing (**Metagenomics**)
 - RNA Sequencing (**Metatranscriptomics**)
 - Mass-Spec (**Metaproteomics** and **Metabolomics**)
+- ...
 
 We will focus on sequencing-based approaches, i.e. DNA and RNA sequencing
+
+## Estimating Bacterial Abundances
+16s rRNA is a subunit of the ribosome, it carries a *fingerprint* for bacterial species.
+
+- put primers in the conserved regions
+- amplify the variable regions
+- get bacterial abundance estimates :)
+
+![16SrRNA][16SrRNA]
+
+*Image taken from [alimetrics.net](http://www.alimetrics.net/en/index.php/dna-sequence-analysis)*
+
+## Estimating Bacterial Abundances
+
+Whole Metagenome Sequencing (WMGS) is the sequencign of all DNA found in a sample. Default Workflow:
 
 ## Slide with Interactive Plot
 
@@ -42,3 +60,6 @@ renderPlot({
 })
 ```
 
+
+
+[16SrRNA]: 16SrRNA.Structure.png "16S rRNA Structure"

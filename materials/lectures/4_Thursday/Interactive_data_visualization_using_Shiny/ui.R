@@ -1,5 +1,5 @@
 ### ui.R : lays out the page ###
-size = 500
+size = 450
 
 shinyUI(fluidPage(
   titlePanel("MA plot explorer"),

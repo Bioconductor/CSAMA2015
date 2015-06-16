@@ -1,9 +1,11 @@
 ---
-title: "Interactive data visualization using Shiny"
+title: "Interactive data visualization with Shiny"
 author: "Andrzej Oleś"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: ioslides_presentation
 css: style.css
+widescreen: true
+self_contained: true
 runtime: shiny
 ---
 
@@ -160,10 +162,8 @@ numericInput('x', 'Please enter a number', 5)
 <br/><br/><br/>
 <p align="center">![Reactivity](reactive.png)</p>
 
-<!--
-## Interactive MA plot
+## <!--MA plot explorer-->
 
 ```{r, echo = FALSE}
-shinyAppDir("/home/oles/teaching/CSAMA2015/materials/lectures/4_Thursday/Interactive_data_visualization_using_Shiny/plotMA")
+shinyAppDir(".")
 ```
--->

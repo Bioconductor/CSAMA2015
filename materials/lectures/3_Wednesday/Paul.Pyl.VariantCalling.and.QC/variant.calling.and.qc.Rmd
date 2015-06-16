@@ -31,9 +31,22 @@ C         |  *1* |  0 |  0 |  **4** |  0 |  0 |  0 |  0 |  0 |  4 |  0 |  0 |
 G         |  2 |  0 |  0 |  0 | 10 |  0 |  **8** |  8 |  0 |  0 |  2 |  0 |
 T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
 
+## The Data (Cohort Example)
+<div style="width: 70%; margin: auto;">
+![cohortTally][cohortTally]
+</div>
+
+## Variant-Calling Software
+- [The Genome Analysis Toolkit](https://www.broadinstitute.org/gatk/)
+- [Samtools](http://www.htslib.org/doc/samtools-1.2.html)
+- Bioconductor Packages:
+    - [VariantTools](http://bioconductor.org/packages/release/bioc/html/VariantTools.html)
+    - [h5vc](http://bioconductor.org/packages/release/bioc/html/h5vc.html)
+
+![h5vc][h5vc]
+
 ## Certainty and Sequencing Depth
 In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
-
 
 ## Certainty and Sequencing Depth
 
@@ -77,6 +90,110 @@ When dealing with paired cancer samples we ask:
 * Visualising them helps to spot weird patterns
 * Annotate them to gain extra information, e.g. population frequencies, SIFT scores, affected genes and type of mutation (missense, nonsense, stop gain, ...)
 
+## Telling the good from the bad
+
+![GoodSNV][good]
+
+## Telling the good from the bad
+
+![BadSNV][bad]
+
+## Telling the good from the bad
+<div style="width: 80%; margin: auto;">
+![nice][nice]
+</div>
+## Telling the good from the bad
+<div style="width: 80%; margin: auto;">
+![notSoNice][notSoNice]
+</div>
+## Telling the good from the bad
+<div style="width: 70%; margin: auto;">
+![horrible][horrible]
+</div>
+
+# The VCF File Format
+## Variant File Formats {.smaller}
+```{r, message=FALSE}
+require(VariantAnnotation)
+vcf <- readVcf(file = "1000g.subset.vcf", genome = "hg19")
+vcf
+```
+
+## Variant File Formats {.smaller}
+```{r}
+head(rowRanges(vcf))
+```
+
+## Variant File Formats {.smaller}
+```{r}
+geno(vcf)$GT[1:3,1089:1093]
+```
+
+```{r}
+info(vcf)[1:3,grep(x = colnames(info(vcf)), pattern = "AF")]
+```
+
+# Annotating Variants
+
+## Ensembl Variant Effect Predictor
+
+![vep][vep]
+
+## Ensembl Variant Effect Predictor
+
+```{r, eval = FALSE}
+source("http://bioconductor.org/biocLite.R")
+biocLite("ensemblVEP")
+```
+
+Interesting Annotations:
+
+- Affected Genes
+- Missense, Nonsense, splice site, ...
+- SIFT and PolyPhen Scores (conservation)
+- Populations allele frequencies and dbSNP / COSMIC IDs
+
+## Ensembl Variant Effect Predictor - Report
+<div style="width: 70%; margin: auto;">
+![vepReport][vepReport]
+</div>
+## Ensembl Variant Effect Predictor - Results {.smaller}
+```{r, echo=TRUE}
+vep <- read.table("VEP.Results.txt", header = TRUE, stringsAsFactors = FALSE)
+colnames(vep)
+```
+
+## Ensembl Variant Effect Predictor - Results {.smaller}
+```{r, echo=FALSE}
+x <- unlist(subset(vep, SIFT != "-"))
+x[x!="-"]
+```
+
+## Ensembl Variant Effect Predictor - Results {.smaller}
+
+```{r}
+x <- subset(vep, GMAF != "-")
+x[,c("Location", "Allele", "SYMBOL", grep("MAF", colnames(x), value = TRUE))]
+```
+
+## Ensembl VEP - Impact Scores
+We use the SIFT and PolyPhen scores to asses how damaging a variant is.
+
+- Based on homology, i.e. only valid for coding variants
+- For a given position we model the likelihood of a homologous position being mutated
+- If a position can be mutated a lot in homologous genes, it is less likely to be important for the gene function
+
+## Ensembl VEP - Known Variants
+dbSNP:
+
+- for population variants (Single Nucleotide **Polymorphisms**)
+
+COSMIC:
+
+- for somatic variants reported in cancer studies
+
+## The End
+
 ## Plotting SNVs - Comparative Example
 
 ```{r, echo=FALSE, message=FALSE, eval=TRUE,}
@@ -116,45 +233,7 @@ pll <- mismatchPlot(
 print(pll)
 ```
 
-## Telling the good from the bad
 
-![GoodSNV][good]
-
-## Telling the good from the bad
-
-![BadSNV][bad]
-
-## Variant File Formats {.smaller}
-```{r, message=FALSE}
-require(VariantAnnotation)
-vcf <- readVcf(file = "1000g.subset.vcf", genome = "hg19")
-vcf
-```
-
-## Variant File Formats {.smaller}
-```{r}
-head(rowRanges(vcf))
-```
-
-## Variant File Formats {.smaller}
-```{r}
-geno(vcf)$GT[1:3,1089:1093]
-```
-
-```{r}
-info(vcf)[1:3,grep(x = colnames(info(vcf)), pattern = "AF")]
-```
-
-## Ensembl Variant Effect Predictor
-
-![vep][vep]
-
-## Ensembl Variant Effect Predictor
-
-```{r, eval = FALSE}
-source("http://bioconductor.org/biocLite.R")
-biocLite("ensemblVEP")
-```
 
 [snvOV]: Illustrations/SNVOverview.png "Overview of SNV types"
 [snvData]: Illustrations/SNVdata.png "Overview of WGS/WEX SNV Data"
@@ -162,3 +241,9 @@ biocLite("ensemblVEP")
 [good]: Illustrations/CSMD3.png "A Good Variant"
 [bad]: Illustrations/PABPC1.png "A Bad Variant"
 [vep]: Illustrations/vep.png "the VEP"
+[vepReport]: Illustrations/vepReport.png "the VEP Report"
+[cohortTally]: Illustrations/cohortTally.png "A Tally of a cohort"
+[nice]: Illustrations/nice.tiff "A Good Variant"
+[notSoNice]: Illustrations/not.so.nice.tiff "A Bad Variant"
+[horrible]: Illustrations/patently.horrible.png "A Very Bad Variant"
+[h5vc]: Illustrations/h5vc.png "The h5vc Paper"

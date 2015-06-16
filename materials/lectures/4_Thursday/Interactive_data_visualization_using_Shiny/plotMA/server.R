@@ -23,23 +23,21 @@ shinyServer(function(input, output) {
   observe({
     if (!is.null(xy())) {
       ## find index of the closest point
-      sqdists <- colMeans( (t.data.scaled - xy()/scale )^2 ) 
-      current$idx <- which.min(sqdists)  
+      sqdists <- colMeans( (t.data.scaled - xy()/scale )^2 )
+      current$idx <- which.min(sqdists)
     }
   })
   
   # MA-plot
   output$plotma <- renderPlot({
-    # update on user click
-    #xy()
-    #par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
+    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
     # MA-plot of all genes
     plotMA(res, ylim=c( -ymax, ymax ), alpha=input$alpha)
     # add circle for the selected point
     idx = current$idx
     if (!is.null(idx)) points( data[idx,1], data[idx,2], col="dodgerblue", cex=3, lwd=3 )
   })
-
+  
   # counts plot
   output$plotcounts <- renderPlot({
     par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
@@ -48,5 +46,5 @@ shinyServer(function(input, output) {
     idx = current$idx
     if (!is.null(idx)) plotCounts( dds, idx, intgroup=c("dex") )
   })
-  
+
 })

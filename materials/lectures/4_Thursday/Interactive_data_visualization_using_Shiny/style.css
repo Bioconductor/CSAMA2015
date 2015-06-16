@@ -9,11 +9,19 @@ iframe {
 }
 .title-slide hgroup h1 {
   color: #1a81c2;
-  font-size: 60px;
+  font-size: 56px;
 }
 .title-slide hgroup p {
-  font-size: 36px;
+    font-size: 32px;
+    color: rgb(0,0,0);
 }
 h2 {
   color: #87b13f;
+}
+slides > slide {
+    color: rgb(0,0,0);
+}
+ul > li:before {
+    content: "•";
+    color: #1a81c2;
 }

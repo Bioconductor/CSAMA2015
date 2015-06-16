@@ -47,12 +47,9 @@ anova(fit)
 plot(y ~ x, df)                      # methods(plot); ?plot.formula
 abline(fit, col="red", lwd=3, lty=2) # a function, not generic.method
 
-## ----lapply-setup, echo=FALSE--------------------------------------------
-fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
-
-## ----lapply-user-setup, eval=FALSE---------------------------------------
-## ## example data
-## fl <- file.choose()      ## symgo.csv
+## ----lapply-user-setup ---------------------------------------
+## download example data 'symgo.csv' from course repository
+fl <- file.choose()      ## symgo.csv
 
 ## ----lapply--------------------------------------------------------------
 symgo <- read.csv(fl, row.names=1, stringsAsFactors=FALSE)
@@ -82,13 +79,8 @@ head(aggregate(SYMBOL ~ GO, symgo, function(x) {
 }))
 
 ## ----echo=TRUE, eval=FALSE-----------------------------------------------
-## fname <- file.choose()   ## "ALLphenoData.tsv"
-## stopifnot(file.exists(fname))
-## pdata <- read.delim(fname)
-
-## ----echo=FALSE----------------------------------------------------------
-fname <- system.file(package="CSAMA15Morgan", "extdata",
-    "ALLphenoData.tsv")
+## download 'ALLphenoData.tsv' from course repository
+fname <- file.choose()   ## "ALLphenoData.tsv"
 stopifnot(file.exists(fname))
 pdata <- read.delim(fname)
 
@@ -139,13 +131,8 @@ t.test(age ~ mol.biol, bcrabl)
 boxplot(age ~ mol.biol, bcrabl)
 
 ## ----echo=TRUE, eval=FALSE-----------------------------------------------
-## fname <- file.choose()   ## BRFSS-subset.csv
-## stopifnot(file.exists(fname))
-## brfss <- read.csv(fname)
-
-## ----echo=FALSE----------------------------------------------------------
-fname <- system.file(package="CSAMA15Morgan", "extdata",
-    "BRFSS-subset.csv")
+## download 'BRFSS-subset.csv' from course repository
+fname <- file.choose()   ## BRFSS-subset.csv
 stopifnot(file.exists(fname))
 brfss <- read.csv(fname)
 

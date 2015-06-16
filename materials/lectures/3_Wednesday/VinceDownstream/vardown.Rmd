@@ -1,0 +1,148 @@
+---
+title: "CSAMA 2015: Downstream work with Human SNP"
+author: Vince Carey
+date: June 16, 2015
+output:
+  ioslides_presentation:
+    incremental: false
+    fig_height: 3.6
+runtime: shiny
+---
+
+```{r setup,echo=FALSE,results="hide"}
+suppressMessages({
+suppressPackageStartupMessages({
+suppressWarnings({
+library(BiocStyle)
+library(shiny)
+library(rmarkdown)
+library(gtexStore)
+library(gwascat)
+library(grid)
+library(png)
+library(DT)
+library(gQTLBase)
+library(gQTLstats)
+library(gwascat)
+data(hmm878)
+data(gwrngs19)
+})
+})
+})
+```
+
+## Road map
+- Variant:phenotype associations that are statistically strong and replicated
+    - GWAS catalog at EBI/EMBL and a Bioconductor representation
+- Tissue-specific expression associated with SNP genotypes
+    - GTEx portal at Broad Institute -- no package, but strategy
+
+## GWAS catalog at EBI/EMBL
+
+```{r lkgw,fig=TRUE,echo=FALSE,fig.height=5.6}
+library(png)
+im = readPNG("figures_vjcwed/gwascatHome.png")
+grid.raster(im)
+```
+
+## Catalog with hg19 coordinates
+
+```{r lkgw2}
+library(gwascat)
+data(gwrngs19)  # will be ebicat37 in next release
+gwrngs19
+```
+
+## All fields, interactively searchable
+
+```{r lkgw3,echo=FALSE}
+ui = fluidPage(titlePanel("metadata of gwascat gwrngs19"),
+#
+# should be selectize
+#
+   fluidRow( column(12, DT::dataTableOutput('gwr')) )
+   )
+
+server = function(input, output, session) {
+
+   output$gwr = DT::renderDataTable(
+      DT::datatable(as.data.frame(mcols(gwrngs19[1:500,])))
+   )
+}
+shinyApp(ui=ui, server=server)
+```
+
+## Challenge
+
+- Sketch a strategy for addressing the following questions using Bioconductor resources
+
+    - Are GWAS SNP more commonly found in coding or regulatory regions?
+    - For a given disease type (e.g., autoimmune or metabolic), do particular types of regulatory regions more frequently harbor GWAS SNPs?
+
+
+## GTEx at Broad
+
+```{r lkgt,fig=TRUE,echo=FALSE,fig.height=5.6}
+library(png)
+im = readPNG("figures_vjcwed/gtexHome.png")
+grid.raster(im)
+```
+
+## A strategy for mediating access to lots of variants {.smaller}
+
+```{r lksto}
+library(gtexStore)
+library(gQTLbrowser)
+reg = gtexWBreg()
+reg
+```
+
+## A selection of 111 million+ tests in GTEx
+
+```{r lksto2}
+loadResult(reg, 1)[1:4]
+library(parallel)
+options(mc.cores=4)
+sum(unlist(mclapply(gtexjids(), 
+    function(x) length(loadResult(reg, x)))))
+```
+
+## An integrative interface
+
+```{r donex,echo=FALSE,cache=TRUE}
+data(gencodeV12_ugr)
+suppressWarnings({
+ suppressMessages({
+reg = gtexWBreg() 
+wbstore = ciseStore(reg, TRUE, TRUE, "gene")
+ })
+})
+```
+```{r domo,echo=FALSE}
+gmod2 <<- function (sym, genome = "hg19", orgDb=Homo.sapiens,
+   collector=exonsBy, verbose=FALSE)
+{
+    rend = suppressPackageStartupMessages
+    if (verbose) rend = force
+    rend({
+    require(txn <- gsub("%%G%%", genome, "TxDb.Hsapiens.UCSC.%%G%%.knownGene"),
+      character.only=TRUE)
+    require(deparse(substitute(orgDb)), character.only=TRUE)
+    })
+    txdb = get(txn)
+    num = AnnotationDbi::select(orgDb, keys=sym, keytype="SYMBOL",
+          columns="ENTREZID")$ENTREZID
+    collector(txdb, by = "gene")[[num]]
+}
+seqlevelsStyle(gencodeV12_ugr) = "NCBI"
+seqlevelsStyle(gwrngs19) = "NCBI"
+seqlevelsStyle(hmm878) = "NCBI"
+gQTLbrowse2( wbstore, gencodeV12_ugr, hmm878, gwrngs19 )
+```
+
+## Summary
+
+- GWAS catalog handled by a GRanges, permitting convenient assessment of location coincidences
+- eQTL catalog (GTEx) can be very voluminous (snps x genes) and special data management is needed
+    - we combine GWAS, ChromHMM, and eQTL results in the gQTLbrowser (not released)
+    - AnnotationHub resources can help with functional annotation access/integration

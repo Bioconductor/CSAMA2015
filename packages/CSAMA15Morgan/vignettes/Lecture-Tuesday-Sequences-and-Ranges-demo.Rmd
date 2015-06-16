@@ -1,0 +1,117 @@
+---
+title: "Lecture 07 Demos: Computing on Sequences and Ranges"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  % \VignetteIndexEntry{Lecture 07 Demos: Computing on Sequences and Ranges}
+  % \VignetteEngine{knitr::rmarkdown}
+---
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+options(showHeadLines=3, showTailLines=2, max.print=1000)
+suppressPackageStartupMessages({
+    library(Biostrings)
+    library(BSgenome.Hsapiens.UCSC.hg19)
+    library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    library(AnnotationHub)
+})
+```
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+Authors: Martin Morgan (<a
+  href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
+  Arora (<a
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
+Date: 16 June, 2015<br />
+
+## Basic manipulation of BSgenome annotation resources
+
+```{r BSgenome}
+library(Biostrings)
+library(BSgenome.Hsapiens.UCSC.hg19)
+Hsapiens                                # also BSgenome.Hsapiens.UCSC.hg19
+Hsapiens[["chr19"]]                     # load single chromosome
+letterFrequency(Hsapiens[["chr19"]], "GC")
+methods(class=class(Hsapiens))          # e.g., getSeq(), matchPWM()
+```
+
+## `exonsBy()` and friends for TxDb (gene model) packages
+
+```{r TxDb}
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene   # easy-to-type alias
+egids <- c(BRCA1="672", PTEN="5728")
+genes(txdb, vals=list(gene_id=egids))   # start / end coordinates for two genes
+exByGn <- exonsBy(txdb, "gene")         # exons grouped by gene
+methods(class=class(txdb))              # cds, transcripts, promoters, ...
+```
+
+## GC content of exons in UCSC hg19 knownGene track
+
+```{r BSgenome-TxDb}
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+
+ex <- getSeq(Hsapiens, exons(txdb))
+ex
+hist(letterFrequency(ex, "GC", as.prob=TRUE))
+```
+
+Eagle-eyed audience members noted that the first and last exon were
+the same widht, and share many nucleotides. Mike Love notes that these
+exons are from genes in the DDX11L1 family, which occurs in
+subtelomeres, where. duplication is not surprising because of telomere
+sequence similarity. This
+[paper](http://www.biomedcentral.com/1471-2164/10/250) provides some
+context.
+
+## Roadmap epigenomics BED files
+
+From the vignette [_AnnotationHub_ How-To's](http://bioconductor.org/packages/devel/bioc/vignettes/AnnotationHub/inst/doc/AnnotationHub-HOWTO.html)
+
+```{r roadmap-bed}
+library(AnnotationHub)
+hub <- AnnotationHub()
+```
+```{r roadmap-bed-devel, eval=FALSE}
+## requires 'devel' version of Bioconductor
+query(hub , c("EpigenomeRoadMap", "E126", "H3K4ME2"))
+E126 <- hub[["AH29817"]]
+```
+```{r roadmap-bed-faux, echo=FALSE}
+E126 <- rtracklayer::import("/home/mtmorgan/.AnnotationHub/35257",
+    format = "bed", genome = "hg19", 
+    extraCols = c(signalValue = "numeric", pValue = "numeric", 
+      qValue = "numeric", peak = "numeric"))
+
+```
+```{r roadmap-bed-result}
+E126
+```
+
+## liftOver from hg19 to hg38 coordinates
+
+```{r liftOver}
+query(hub , c("hg38", "hg19", "chainfile"))
+
+E126hg38 <- liftOver(E126, hub[["AH14150"]])
+E126hg38
+## GRangesList because some peaks lift over to multiple genomic locations
+table(elementLengths(E126hg38))
+```
+
+## summarizeOverlaps between aligned reads and known genes
+
+See exercise in Lab 1.3.
+
+## Working with Hits object
+
+See the "Working with dbSNP Variants" section of the
+[_AnnotationHub_ How-To](http://bioconductor.org/packages/devel/bioc/vignettes/AnnotationHub/inst/doc/AnnotationHub-HOWTO.html#working-with-dbsnp-variants)
+vignette.

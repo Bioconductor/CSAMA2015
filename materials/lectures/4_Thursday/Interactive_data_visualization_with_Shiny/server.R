@@ -12,18 +12,15 @@ data[,2] <- pmin(ymax, pmax(-ymax, data[,2]))
 scale <- c(diff(range(data[,1])), 2*ymax)
 t.data.scaled <- t(data)/scale
 
-par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-
 shinyServer(function(input, output) {
   
   current = reactiveValues(idx = NULL)
   
-  xy = reactive(c(input$plotma_click$x, input$plotma_click$y))
-  
   observe({
-    if (!is.null(xy())) {
+    xy = c(input$plotma_click$x, input$plotma_click$y)
+    if (!is.null(xy)) {
       ## find index of the closest point
-      sqdists <- colMeans( (t.data.scaled - xy()/scale )^2 )
+      sqdists <- colMeans( (t.data.scaled - xy/scale )^2 )
       current$idx <- which.min(sqdists)
     }
   })

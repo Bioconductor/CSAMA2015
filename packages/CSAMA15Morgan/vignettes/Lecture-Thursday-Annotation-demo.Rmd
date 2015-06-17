@@ -1,0 +1,181 @@
+---
+title: "Lecture 15 Demos: Annotating Genes, Genomes, and Variants"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  % \VignetteIndexEntry{Lecture 15 Demos: Annotating Genes, Genomes, and Variants}
+  % \VignetteEngine{knitr::rmarkdown}
+---
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+options(showHeadLines=3, showTailLines=2, max.print=1000)
+suppressPackageStartupMessages({
+    library(biomaRt)
+    library(AnnotationHub)
+})
+```
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+Authors: Martin Morgan (<a
+  href="mailto:mtmorgan@fhcrc.org">mtmorgan@fhcrc.org</a>), Sonali
+  Arora (<a
+  href="mailto:sarora@fredhutch.org">sarora@fredhutch.org</a>)<br />
+Date: 16 June, 2015<br />
+
+## Mapping identifiers in org.* packages
+
+```{r OrgDb}
+library(org.Hs.eg.db)
+org <- org.Hs.eg.db       # convenient alias
+keytypes(org)             # map from keys...
+columns(org)              # ...to columns
+```
+
+`mapIds()` enforces 1:1 mapping by default
+
+```{r 1-1-mapping}
+sym <- keys(org, "SYMBOL")
+mapIds(org, c("BRCA1", "PTEN"), "GENENAME", "SYMBOL")
+map <- mapIds(org, sym, "GENENAME", "SYMBOL")
+length(map)
+head(map)
+```
+
+`mapIds()` supports 1:many mapping
+
+```{r 1-many-mapping}
+head(select(org, keys(org), "ALIAS"))
+head(mapIds(org, keys(org), "ALIAS", "ENTREZID"))
+head(mapIds(org, keys(org), "ALIAS", "ENTREZID", multiVals="CharacterList"))
+str(head(mapIds(org, keys(org), "ALIAS", "ENTREZID", multiVals="list")))
+```
+
+`select()` can be used to select several different columns
+
+## OrgDb versus OrganismDb packages
+
+`OrgDb` (e.g., `r Biocpkg("org.Hs.eg.db")`)
+
+- Gene symbol maps only
+
+`OrganismDb` (e.g., `r Biocpkg("Homo.sapiens")`) packages.
+
+- Gene symbol + TxDb + GO.db packages
+- Use `select()`, `exons()` etc., without needing to navigate between
+  packages
+
+```{r org-and-txdb}
+library(org.Hs.eg.db)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+
+sym <- "BRCA1"
+
+eid <- mapIds(org.Hs.eg.db, sym, "ENTREZID", "SYMBOL")
+txid <- mapIds(txdb, eid, "TXNAME", "GENEID", multiVals="list")[[eid]]
+txid
+
+cds <- cdsBy(txdb, by="tx", use.names=TRUE)
+cds[names(cds) %in% txid]
+```
+
+```{r organismdb, eval=FALSE}
+library(Homo.sapiens)
+
+txid <- mapIds(Homo.sapiens, sym, "TXNAME", "SYMBOL", multiVals="list")[[sym]]
+cds <- cdsBy(Homo.sapiens, by="tx", use.names=TRUE)
+```
+
+Possible to create custom versions, e.g.,
+`OrganismDbi::makeOrganismDbFromBiomart()`.
+
+## Discovery and retrieval from _biomaRt_
+
+Web resource: [http://biomart.org](http://biomart.org)<br />
+Package: `r Biocpkg("biomaRt")`
+
+```{r biomaRt}
+library(biomaRt)
+head(listMarts())                               # available marts, 52!
+head(listDatasets(useMart("ensembl")))          # datasets in mart, 69!
+ensembl <-                                      # fully specified mart
+  useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+head(listFilters(ensembl), 3)                   # filters, 296!
+myFilter <- "chromosome_name"
+substr(filterOptions(myFilter, ensembl), 1, 50) # return values
+myValues <- c("21", "22")
+head(listAttributes(ensembl), 3)                # attributes
+myAttributes <- c("ensembl_gene_id","chromosome_name")
+
+## assemble and query the mart
+res <- getBM(myAttributes, myFilter, myValues, ensembl)
+```
+
+## Discovery and retrieval from _AnnotationHub_
+
+Package: `r Biocpkg("AnnotationHub")`
+
+```{r AnnotationHub}
+library(AnnotationHub)
+hub = AnnotationHub()
+hub
+query(hub, c("Ensembl", "80", "gtf"))
+## ensgtf = display(hub)                   # visual choice
+hub["AH47107"]
+gtf <- hub[["AH47107"]]
+gtf
+## org.* data bases available from AnnotationHub
+query(hub, "OrgDb")
+mcols(query(hub, "OrgDb"))[, "species", drop=FALSE]
+```
+
+In Bioc-devel, `metadata(gtf)` returns information about the
+_AnnotationHub_ record `gtf` is derived from.
+
+## _AnnotationHub_ for non-model-organism `org.*` packages
+
+```{r AnnotationHub-org}
+library(AnnotationHub)
+hub = AnnotationHub()
+query(hub, "OrgDb")
+hub[["AH12818"]]
+```
+
+## _AnnotationHub_ for Ensembl GTF, FASTA, and TxDb resources
+
+Discover and retrieve available GTF and FASTA resources for pufferfish
+
+```{r AnnotationHub-takifugu}
+library(AnnotationHub)
+hub = AnnotationHub()
+query(hub, c("ensembl","release-80", "Takifugu"))
+gtf <- hub[["AH47101"]]
+dna <- hub[["AH47477"]]
+
+gtf
+dna
+head(seqlevels(dna))
+```
+
+Create a `TxDb` instance
+
+```{r AnnotationHub-txdb}
+library(GenomicFeatures)
+txdb <- makeTxDbFromGRanges(gtf)
+## saveDb(txdb, "TxDb.Takifugu.Ensembl.80.sqlite")
+## loadDb("TxDb.Takifugu.Ensembl.80.sqlite")
+```
+
+Use txdb
+
+```{r AnnotationHub-takifugi-exons}
+library(Rsamtools)     # for getSeq,FaFile-method
+exons <- exons(txdb)
+getSeq(dna, exons)
+```

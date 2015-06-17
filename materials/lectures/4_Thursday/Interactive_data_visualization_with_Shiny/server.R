@@ -1,4 +1,5 @@
-### server.R : builds the plots and tables ###
+# server.R
+
 library(DESeq2)
 
 load("data.rda")
@@ -27,18 +28,16 @@ shinyServer(function(input, output) {
   
   # MA-plot
   output$plotma <- renderPlot({
-    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-    # MA-plot of all genes
-    plotMA(res, ylim=c( -ymax, ymax ), alpha=input$alpha)
-    # add circle for the selected point
+    par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
+    plotMA( res, ylim=c(-ymax, ymax), alpha=input$alpha )
+    # add a circle around the selected point
     idx = current$idx
     if (!is.null(idx)) points( data[idx,1], data[idx,2], col="dodgerblue", cex=3, lwd=3 )
   })
   
-  # counts plot
+  # counts plot for the selected gene
   output$plotcounts <- renderPlot({
-    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-    # plot the counts for the selected gene
+    par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
     # update only when idx changes
     idx = current$idx
     if (!is.null(idx)) plotCounts( dds, idx, intgroup=c("dex") )

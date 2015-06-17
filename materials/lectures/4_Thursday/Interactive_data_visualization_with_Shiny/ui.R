@@ -1,4 +1,5 @@
-### ui.R : lays out the page ###
+# ui.R
+
 size = 450
 
 shinyUI(fluidPage(
@@ -9,7 +10,8 @@ shinyUI(fluidPage(
     plotOutput("plotcounts", width=size, height=size)
   ),
   splitLayout(cellWidths=size,
-    sliderInput("alpha", "Alpha", min=0, max=0.2, value=0.1, step=0.001, width=size)
+    sliderInput("alpha", "Adjusted p-value treshold",
+                min=0, max=0.2, value=0.1, step=0.001, width=size)
   )
   
 ))

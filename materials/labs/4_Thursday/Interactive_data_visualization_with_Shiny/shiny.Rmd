@@ -147,14 +147,12 @@ We’ll use the `my_app` you made before. To get started edit the `server.R` and
 
 **ui.R**
 ```{r}
-shinyUI(fluidPage(
-))
+shinyUI(fluidPage())
 ```
 
 **server.R**
 ```{r}
-shinyServer(function(input, output) {
-})
+shinyServer(function(input, output) {})
 ```
 
 This code is the bare minimum needed to create a Shiny app. The result is an empty app with a blank user interface.
@@ -321,14 +319,11 @@ shinyUI(fluidPage(
     column(3, 
       checkboxGroupInput("checkGroup", 
         label = h3("Checkbox group"), 
-        choices = list("Choice 1" = 1, 
-           "Choice 2" = 2, "Choice 3" = 3),
+        choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3),
         selected = 1)),
     
     column(3, 
-      dateInput("date", 
-        label = h3("Date input"), 
-        value = "2014-01-01"))   
+      dateInput("date", label = h3("Date input"), value = "2014-01-01"))   
   ),
   
   fluidRow(
@@ -346,33 +341,26 @@ shinyUI(fluidPage(
         "accompany other widgets.")),
     
     column(3, 
-      numericInput("num", 
-        label = h3("Numeric input"), 
-        value = 1))   
+      numericInput("num", label = h3("Numeric input"), value = 1))   
   ),
     
   fluidRow(
     
     column(3,
       radioButtons("radio", label = h3("Radio buttons"),
-        choices = list("Choice 1" = 1, "Choice 2" = 2,
-                       "Choice 3" = 3),selected = 1)),
+        choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1)),
     
     column(3,
       selectInput("select", label = h3("Select box"), 
-        choices = list("Choice 1" = 1, "Choice 2" = 2,
-                       "Choice 3" = 3), selected = 1)),
+        choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1)),
     
     column(3, 
-      sliderInput("slider1", label = h3("Sliders"),
-        min = 0, max = 100, value = 50),
-      sliderInput("slider2", "",
-        min = 0, max = 100, value = c(25, 75))
+      sliderInput("slider1", label = h3("Sliders"), min = 0, max = 100, value = 50),
+      sliderInput("slider2", "", min = 0, max = 100, value = c(25, 75))
       ),
     
     column(3, 
-      textInput("text", label = h3("Text input"), 
-        value = "Enter text..."))   
+      textInput("text", label = h3("Text input"), value = "Enter text..."))   
   )
 
 ))
@@ -456,15 +444,14 @@ library(DESeq2)
 load("data.rda")
 res <- results(dds)
 
-ymax = 5
+ymax <- 5
 
 shinyServer(function(input, output) {
   
   # MA-plot
   output$plotma <- renderPlot({
-    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-    # MA-plot of all genes
-    plotMA(res, ylim=c(-ymax, ymax))
+    par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
+    plotMA( res, ylim=c(-ymax, ymax), alpha=input$alpha )
   })
   
 })
@@ -504,15 +491,18 @@ shinyUI(fluidPage(
   titlePanel("MA plot explorer"),
 
   splitLayout(cellWidths=size,
-    plotOutput("plotma", width=size, height=size)
+    plotOutput("plotma", click="plotma_click", width=size, height=size),
+    plotOutput("plotcounts", width=size, height=size)
   ),
   splitLayout(cellWidths=size,
-    sliderInput("alpha", "Adjusted p-value threshold",
-                min=0, max=0.2, value=0.1, step=0.01, width=size)
+    sliderInput("alpha", "Adjusted p-value treshold",
+                min=0, max=0.2, value=0.1, step=0.001, width=size)
   )
   
 ))
 ```
+
+The slider allows to select values in the range from 0 to 0.2 in steps of 0.001, and we have set its width to match the size of the plot above it.
 
 You can make the plot reactive by asking Shiny to call the slider value when it builds the plot. Let’s look at how to do this.
 
@@ -538,7 +528,7 @@ Finally, we will make the MA plot clickable allowing to select a gene, and add t
 
 We start by adding the counts plot next to the MA plot, so that the `ui.R` script matches the following:
 
-```{r}
+```r
 # ui.R
 
 size = 450
@@ -551,7 +541,8 @@ shinyUI(fluidPage(
     plotOutput("plotcounts", width=size, height=size)
   ),
   splitLayout(cellWidths=size,
-    sliderInput("alpha", "Alpha", min=0, max=0.2, value=0.1, step=0.01, width=size)
+    sliderInput("alpha", "Adjusted p-value treshold",
+                min=0, max=0.2, value=0.1, step=0.001, width=size)
   )
   
 ))
@@ -562,6 +553,8 @@ Notice the additional `click` argument to the `plotOutput` function of the MA pl
 Let's get back to our `server.R` script. In order to be able to resolve which point in the MA plot was the closest to the click, we create the `t.data.scaled` object containing points in normalized coordinates. We will use that object to find the closest point in terms of euclidean distance.
 
 ```r
+# server.R
+
 library(DESeq2)
 
 load("data.rda")
@@ -590,18 +583,16 @@ shinyServer(function(input, output) {
   
   # MA-plot
   output$plotma <- renderPlot({
-    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-    # MA-plot of all genes
-    plotMA(res, ylim=c( -ymax, ymax ), alpha=input$alpha)
-    # add circle for the selected point
+    par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
+    plotMA( res, ylim=c(-ymax, ymax), alpha=input$alpha )
+    # add a circle around the selected point
     idx = current$idx
     if (!is.null(idx)) points( data[idx,1], data[idx,2], col="dodgerblue", cex=3, lwd=3 )
   })
   
-  # counts plot
+  # counts plot for the selected gene
   output$plotcounts <- renderPlot({
-    par(mar=c(5,5,3,2), cex.lab=2, cex.main=2, cex.axis=1.5)
-    # plot the counts for the selected gene
+    par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
     # update only when idx changes
     idx = current$idx
     if (!is.null(idx)) plotCounts( dds, idx, intgroup=c("dex") )
@@ -631,3 +622,107 @@ The observer above is used to update the `current$idx` value only when the value
 What happens if you click on the MA plot?
 
 This will make both plots drawn by `renderPlot` out of date, even though they don't depend directly on `input$plotma_click`. Shiny will know that they became outdated and will redraw the plots because it keeps track of which reactive values an output object depends on. Shiny will automatically re-build an object if an reactive/input value in the object’s `render*` function changes.
+
+# Sharing your apps
+
+Shiny apps are easy to share, and there are several options to choose from. In general, there are two basic ways to do it:
+
+- **Share your Shiny app as two files: _server.R_ and _ui.R_**. This is the simplest way to share an app, but it works only if your users have R on their own computer (and know how to use it). Users can use these scripts to launch the app from their own R session, just like you’ve been launching the apps.
+
+- **Share your Shiny app as a web page**. This is definitely the most user friendly way to share a Shiny app. Your users can navigate to your app through the internet with a web browser. They will find your app fully rendered, up to date, and ready to go.
+
+## Share as R files
+
+Anyone with R can run your Shiny app. They will need a copy of your `server.R` and `ui.R` files, as well as any supplementary materials used in your app (e.g., `www` folders or any helper R scripts). The user can place these files into an app directory and launch the app in R with the same commands you used on your computer, e.g. `runApp`.
+
+Additionally, Shiny provides three built in commands that make it easy to use files that are hosted online: `runUrl`, `runGitHub`, and `runGist`.
+
+### runUrl
+
+`runUrl` will download and launch a Shiny app straight from a weblink. To use `runURL`:
+
+- Save your Shiny app’s directory as a zip file
+- Host that zip file at its own link on a web page. Anyone with access to the link can launch the app from R using:
+
+```r
+runUrl( "<the weblink>" )
+```
+### runGitHub
+
+If you don’t have your own web page to host the files at, you can host your the files for free at [GitHub](http://www.github.com).
+
+Github is a popular project hosting site for R developers since it does more than just host files. GitHub provides many features to support collaboration, such as issue trackers, wikis, and close integration with the [git](http://git-scm.com/) version control system. To use GitHub, you’ll need to sign up (it’s free) and choose a user name.
+
+To share an app through GitHub, create a project repository there. Then store your `server.R` and `ui.R` files in the repository, along with any supplementary files that the app uses. Your users can then launch your app by running:
+
+```r
+runGitHub( "<your user name>/<your repository name>" ) 
+```
+
+### runGist
+
+If you want an anonymous way to post files online, Github offers a pasteboard service for sharing files at [gist.github.com](http://gist.github.com). You don’t need to sign up for Github to use this service. Even if you have a Github account, Gist can be a simple, quick way to share Shiny projects.
+
+To share your app as a Gist:
+
+- Copy and paste your server.R and ui.R files to the Gist web page.
+- Note the URL that Github gives the Gist.
+
+Once you’ve made a Gist, your users can launch the app with `runGist("<gist number>")` where `"<gist number>"` is the number that appears at the end of your Gist’s web address.
+
+[Here](https://gist.github.com/jcheng5/3239667)’s an example of an app hosted as a Gist. You could launch this app with
+
+```r
+runGist("3239667")
+```
+
+## Share as a web page
+
+All of the above methods share the same limitation: they require your user to have R and Shiny installed on their computer. However, Shiny creates the perfect opportunity to share output with people who do *not* have R (and have no intention of getting it). Your Shiny app happens to be one of the most widely used communication tools in the world: a web page. If you host the app at its own URL, users can visit the app (and not need to worry about code).
+
+RStudio offers three ways to host your Shiny app as a web page:
+
+- Shinyapps.io
+- Shiny Server, and
+- Shiny Server Pro
+
+### Shinyapps.io
+
+The easiest way to turn your Shiny app into a web page is to use [shinyapps.io](http://my.shinyapps.io/), RStudio’s hosting service for Shiny apps. shinyapps.io lets you upload your app straight from your R session to a server hosted by RStudio.
+
+### Shiny Server
+
+Shiny Server is a companion program to Shiny that builds a web server designed to host Shiny apps. It’s free, open source, and available from Github.
+
+Shiny Server is a server program that Linux servers can run to host a Shiny app as a web page. To use Shiny Server, you’ll need a Linux server that has explicit support for Ubuntu 12.04 or greater (64 bit) and CentOS/RHEL 5 (64 bit). If you are not using an explicitly supported distribution, you can still use Shiny Server by building it from source.
+
+You can host multiple Shiny applications on multiple web pages with the same Shiny Server, and you can deploy the apps from behind a firewall. To see detailed instructions for installing and configuring a Shiny Server, visit the [Shiny Server guide](https://github.com/rstudio/shiny-server/blob/master/README.md).
+
+### Shiny Server Pro
+
+Shiny Server will get your app to the web and take care of all of your Shiny publishing needs. However, if you use Shiny in a for-profit setting, you may want to give yourself the server tools that come with most paid server programs, such as
+
+- Password authentification
+- SSL support
+- Administrator tools
+- Priority support
+- and more.
+
+If so, check out [Shiny Server Pro](http://www.rstudio.com/shiny/server/), RStudio’s paid professional version of Shiny Server. 
+
+# Extending Shiny
+
+There is a number of packages that provide advanced features that can enhance your Shiny apps. These include:
+
+- [shinythemes](http://rstudio.github.io/shinythemes/) -- CSS themes ready to use with Shiny
+- [shinydashboard](http://rstudio.github.io/shinydashboard/) -- Shiny powered dashboards
+- [shinyURL](https://github.com/aoles/shinyURL) -- Facilities for saving and restoring user input values by encoding them in the app's URL query string
+- [htmlwidgets](http://www.htmlwidgets.org/) -- A framework for embedding JavaScript visualizations into R. Ready to use examples include:
+    + [leaflet](http://rstudio.github.io/leaflet/) -- Geo-spatial mapping
+    + [dygraphs](http://rstudio.github.io/dygraphs/) -- Time series charting
+    + [MetricsGraphics](http://hrbrmstr.github.io/metricsgraphics/) -- Scatterplots and line charts with D3
+    + [networkD3](http://christophergandrud.github.io/networkD3/) -- Graph data visualization with D3
+    + [DataTables](http://rstudio.github.io/DT/) -- Tabular data display
+    + [threejs](https://github.com/bwlewis/rthreejs) -- 3D scatterplots and globes
+    + [rCharts](http://rcharts.io/) -- Multiple JavaScript charting libraries
+

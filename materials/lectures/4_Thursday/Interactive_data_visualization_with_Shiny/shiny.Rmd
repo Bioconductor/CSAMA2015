@@ -5,7 +5,6 @@ date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: ioslides_presentation
 css: style.css
 widescreen: true
-self_contained: true
 runtime: shiny
 ---
 

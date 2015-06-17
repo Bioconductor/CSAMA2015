@@ -93,9 +93,7 @@ At one level, the **Hello Shiny** server script is very simple. It does some cal
 
 However, you’ll also notice that most of the script is wrapped in a call to `renderPlot`. The comment above the function explains a bit about this, but if you find it confusing, don’t worry. We’ll cover this concept in much more detail soon.
 
-Play with the **Hello Shiny** app and review it's source code. Try to develop a feel for how the app works.
-
-Your R session will be busy while the **Hello Shiny** app is active, so you will not be able to run any R commands. R is monitoring the app and executing the app’s reactions. To get your R session back, hit escape or click the stop sign icon (found in the upper right corner of the RStudio console panel).
+Play with the **Hello Shiny** app and review it's source code. Try to develop a feel for how the app works. Your R session will be busy while the **Hello Shiny** app is active, so you will not be able to run any R commands. R is monitoring the app and executing the app’s reactions. To get your R session back, hit escape or click the stop sign icon (found in the upper right corner of the RStudio console panel).
 
 ## Running an App
 
@@ -120,15 +118,22 @@ runApp(system.file(package="shiny", "examples", "01_hello"))
 
 Create your first Shiny app named `my_app`. For this, start RStudio and from the **File** menu choose *New Project... > New Directory > Shiny Web Application*. As the *Directory name* enter the desired name **my_app**. The project will start with `ui.R` and `server.R` containing the familiar code from the **Hello Shiny** app. 
 
-To launch your app execute `runApp()` in your R console. Alternatively, you can click the Run App button (at the top of the editor), or or use the keyboard shortcut: `Control+Shift+Enter` on Windows/Linux, or `Command+Shift+Enter` on MAC.
+To launch your app, run in the R console:
+
+```r
+library(shiny)
+runApp()
+```
+
+Alternatively, you can click the *Run App* button (at the top of the editor), or or use the keyboard shortcut: `Control+Shift+Enter` on Windows/Linux, or `Command+Shift+Enter` on MAC.
 
 ![Run App](images/run-app.png)
 
-RStudio will launch the app in a new window by default, but you can also choose to have the app launch in a dedicated viewer pane, or in your external web browser. Make your selection by clicking the icon next to Run App.
+RStudio will launch the app in a new window by default, but you can also choose to have the app launch in a dedicated viewer pane, or in your external web browser. Make your selection by clicking the icon next to *Run App*.
 
 ![Run App](images/launch-options.png)
 
-Now make some changes to your app:
+Make some changes to your app:
 
 1. Change the title to “Hello World!”.
 2. Set the minimum value of the slider bar to 5.
@@ -185,7 +190,7 @@ shinyUI(fluidPage(
 
 These functions place content in either the sidebar or the main panels. 
 
-`titlePanel` and `sidebarLayout` create a basic layout for your Shiny app, but you can also create more advanced designs. For example, `navbarPage` creates a multi-page user interface that includes a navigation bar. You can also divide the page into equally spaced regions using `splitLayout`, or you can use `fluidRow` and `column` to build a grid-based layout. For an overview, see the *Shiny cheat sheet*.
+`titlePanel` and `sidebarLayout` create a basic layout for your Shiny app, but you can also create more advanced designs. For example, `navbarPage` creates a multi-page user interface that includes a navigation bar. You can also divide the page into equally spaced regions using `splitLayout`, or you can use `fluidRow` and `column` to build a grid-based layout. For an overview, see the [Shiny cheat sheet](shiny-cheatsheet.pdf).
 
 ## HTML Content
 
@@ -198,7 +203,6 @@ To add more advanced content, use one of Shiny’s HTML tag functions. These fun
 To create a header:
 
 - select a header function (e.g., `h1` or `h3`)
-
 - give it the text you want to appear in the header
 
 For example, you can create a first level header that says “My title” with `h1("My title")`. If you run this command in R, you’ll notice that it produces HTML code.
@@ -209,9 +213,7 @@ h1("My title")
 
     ## <h1>My title</h1>
 
-To place the element in your app, pass `h1("My title")` as an argument to `titlePanel`, `sidebarPanel`, or `mainPanel`.
-
-The text will appear in the corresponding panel of your web page. You can place multiple elements in the same panel if you separate them with a comma.
+To place that element in your app, pass it as an argument to `titlePanel`, `sidebarPanel`, or `mainPanel`. The text will appear in the corresponding panel of your web page. You can place multiple elements in the same panel if you separate them with a comma.
 
 Give this a try. The script below uses all six levels of headers. Update your `ui.R` file to match the following code and then relaunch your app.
 
@@ -280,18 +282,16 @@ function | widget
 
 ![Widgets](images/basic-widgets.png)
 
-Some of these widgets are built using the Twitter Bootstrap project, a popular open source framework for building user interfaces.
+Some of these widgets are built using Twitter Bootstrap, a popular open source framework for building user interfaces.
 
 ## Adding widgets
 
-You can add widgets to the user interface in the same way that you added other types of HTML content by placing a widget function in `sidebarPanel` or `mainPanel` in your `ui.R` file.
+You can add widgets to the user interface in the same way that you add other types of HTML content by placing a widget function in `sidebarPanel` or `mainPanel` in your `ui.R` file.
 
 Each widget function requires several arguments. The first two arguments for each widget are
 
-- A Name for the widget. The user will not see this name, but you can use it to access the widget’s value. The name should be a character string.
-- A label. This label will appear with the widget in your app. It should be a character string, but it can be an empty string `""`.
-
-In this example, the name is “action” and the label is “Action”: `actionButton("action", label = "Action")`.
+- **A Name for the widget**. The user will not see this name, but you can use it to access the widget’s value. The name should be a character string.
+- **A label**. This label will appear with the widget in your app. It should be a character string, but it can be an empty string `""`.
 
 The remaining arguments vary from widget to widget, depending on what the widget needs to do its job. You can find the exact arguments required by a widget on the widget function’s help page, e.g., `?selectInput`.
 
@@ -370,9 +370,9 @@ shinyUI(fluidPage(
 
 You will now build a new Shiny app that creates an interactive MA plot. The app will allow you to select a gene by clicking on the MA plot, and it will display a counts plot for the selected gene.
 
-This new Shiny app will need its own, new directory: create one in your working directory and name it `ma_plot`. This is where we’ll save the `ui.R` and `server.R` files described below.
+This new Shiny app will need its own, new directory. Close any open projects and create a new directory named `ma_plot` in your working directory. This is where we’ll save the `ui.R` and `server.R` files described below.
 
-The app will use the example data from the RNA-seq tutorial. The results of differential expression calling have been saved to the data file `data.rda`. Let's start by loading it and reproducing the MA plot.
+The app will use the example data set from the RNA-seq tutorial. Let's start by reproducing the MA plot. The results of differential expression calling have been saved to the data file `data.rda`. Copy the file to the newly created folder `ma_plot`, change your working directory to that folder, e.g. using `setwd("ma_plot")`, and run:
 
 ```{r, eval=TRUE, fig.width=5, fig.height=5, message=FALSE}
 library(DESeq2)
@@ -393,7 +393,7 @@ For the MA plot to appear in our Shiny app, we need to:
 
 ### Step 1: Add the plot to the UI
 
-Shiny provides a family of functions that turn R objects into output for your user interface. Each function creates a specific type of output. 
+Shiny provides a family of functions that turn R objects into output for your user interface. Each function creates a specific type of output:
 
 Output function | creates
 --- | ---
@@ -404,7 +404,7 @@ Output function | creates
 `textOutput` | text
 `uiOutput` | raw HTML
 
-You can add these output functions to the user-interface in the same way that you added HTML elements and widgets. Let's use `plotOutput` to add our MA plot to the user interface.
+You can add these output functions to the user-interface in the same way that you added HTML elements and widgets. Let's use `plotOutput` to add the MA plot to your user interface.
 
 ```r
 # ui.R
@@ -430,9 +430,7 @@ We have used `fluidPage` again, but this time we use `splitLayout` to organize t
 
 Placing a function in `ui.R` tells Shiny where to display your object. Next, you need to tell Shiny how to build the object.
 
-Do this by providing R code that builds the object in `server.R`. The code should go in the unnamed function that appears inside `shinyServer` in the `server.R` script.
-
-The unnamed function plays a special role in the Shiny process; it builds a list-like object named `output` that contains all of the code needed to update the R objects in your app. Each R object needs to have its own entry in the list.
+Do this by providing R code that builds the object in `server.R`. The code should go in the unnamed function that appears inside `shinyServer` in the `server.R` script. The unnamed function plays a special role in the Shiny process; it builds a list-like object named `output` that contains all of the code needed to update the R objects in your app. Each R object needs to have its own entry in the list.
 
 You can create an entry by defining a new element for `output` within the unnamed function, like below. The element name should match the name of the reactive element that you created in `ui.R`. In the script below, `output$plotma` matches `plotOutput("plotma", width=size, height=size)` in your `ui.R` script.
 
@@ -451,15 +449,13 @@ shinyServer(function(input, output) {
   # MA-plot
   output$plotma <- renderPlot({
     par( mar=c(5,5,3,2), cex.main=1.5, cex.lab=1.35 )
-    plotMA( res, ylim=c(-ymax, ymax), alpha=input$alpha )
+    plotMA( res, ylim=c(-ymax, ymax) )
   })
   
 })
 ```
 
-Notice that we have included the code for loading and preprocessing the data just before the call to `shinyServer`. In order that your app finds the data, you need to copy the `data.rda` file to your app's directory. 
-
-The call to `par` before `plotMA` sets some graphical parameters improving the aesthetics of the figure, like `mar` setting the margins, or `cex.*` increasing the text size of the corresponding elements. For more details see `?par`.
+Notice that we have included the code for loading and preprocessing the data just before the call to `shinyServer`. The call to `par` before `plotMA` sets some graphical parameters improving the aesthetics of the figure, like `mar` setting the margins, or `cex.*` increasing the text size of the corresponding elements. For more details see `?par`.
 
 Each entry to output should contain the output of one of Shiny’s `render*` functions. These functions capture an R expression and do some light preprocessing on it. Use the `render*` function that corresponds to the type of reactive object you are making.
 
@@ -491,8 +487,7 @@ shinyUI(fluidPage(
   titlePanel("MA plot explorer"),
 
   splitLayout(cellWidths=size,
-    plotOutput("plotma", click="plotma_click", width=size, height=size),
-    plotOutput("plotcounts", width=size, height=size)
+    plotOutput("plotma", width=size, height=size)
   ),
   splitLayout(cellWidths=size,
     sliderInput("alpha", "Adjusted p-value treshold",
@@ -513,7 +508,7 @@ Take a look at the first line of code in `server.R`. Do you notice that the unna
 So for example, our app has one widget named `"alpha"`, whose value will be stored in `input$alpha`. Shiny automatically makes an object reactive if the object uses an `input` value. In order to make the MA plot reactive, substitute in your `server.R` script the line containing the call to `plotMA` by the following one:
 
 ```r
-plotMA(res, ylim=c(-ymax, ymax), alpha=input$alpha)
+plotMA( res, ylim=c(-ymax, ymax), alpha=input$alpha )
 ```
 
 When you are ready updating the `ui.R` and `server.R` files, launch your Shiny app. The plot should redraw instantly as you move the slider.
@@ -550,7 +545,7 @@ shinyUI(fluidPage(
 
 Notice the additional `click` argument to the `plotOutput` function of the MA plot. If set to a value like `plotma_click`, the plot will send coordinates to the server whenever it is clicked. This value will be accessible via `input$plotma_click` and will contain a named list with `x` and `y` elements indicating the mouse position. We will use the `input$plotma_click` coordinates to resolve the nearest gene in the MA plot.
 
-Let's get back to our `server.R` script. In order to be able to resolve which point in the MA plot was the closest to the click, we create the `t.data.scaled` object containing points in normalized coordinates. We will use that object to find the closest point in terms of euclidean distance.
+Let's get back to our `server.R` script. In order to be able to resolve which point in the MA plot was the closest one to the click, we create the `t.data.scaled` object containing points in normalized coordinates. We will use that object to find the closest point in terms of euclidean distance.
 
 ```r
 # server.R

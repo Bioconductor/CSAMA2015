@@ -27,8 +27,7 @@ Shiny combines the computational power of R with the interactivity of the modern
 
 - build interactive web applications with R easily
 - no HTML or JavaScript knowledge required
-- reactive programming:
-  output changes instantly when input is modified
+- reactive programming: instant reaction on user actions
 
 ## Interactive data visualization
 

@@ -73,12 +73,12 @@ renderPlot({
     seq(0,input$s)/d,
     dens1,
     type = "l", xlab = "Allele Frequency (#SNV / #Reference)", ylab = "Binomial Model Density",
-    main = paste( "Example with sequencing depth", input$s ), ylim = c(0,max(c(dens1, dens2))*1.1)
+    main = paste( "Example with sequencing depth", input$s ), ylim = c(0,max(c(dens1, dens2))*1.1), lwd = 3
     )
   lines(
     seq(0,input$s)/d,
     dens2,
-    type = "l", col = "red"
+    type = "l", col = "red", lwd = 3
     )
 })
 ```

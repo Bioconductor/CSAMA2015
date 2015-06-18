@@ -1,0 +1,217 @@
+% \VignetteEngine{knitr::knitr}
+% \VignetteIndexEntry{Annotation -- slides}
+
+\documentclass{beamer}
+\usepackage{BioconductorSlides}
+\title{Annotating genes, genomes, and variants}
+\author{Martin Morgan 
+  (\href{mailto:mtmorgan@fredhutch.org}{mtmorgan@fredhutch.org}) \\
+  Fred Hutchinson Cancer Research Center \\
+  Seattle, WA, USA
+}
+\date{18 June, 2015}
+
+<<setup, echo=FALSE>>=
+options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
+@ 
+
+<<knitr-settings, echo=FALSE>>=
+library(knitr)
+opts_chunk$set(tidy=FALSE, cache=TRUE)
+options(showHeadLines=3, showTailLines=3, width=60)
+@
+<<settings, echo=FALSE>>=
+suppressPackageStartupMessages({
+    library(BSgenome.Hsapiens.UCSC.hg19)
+    library(GenomicFeatures)
+    library(Gviz)
+    library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+    library(org.Hs.eg.db)
+})
+@ 
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{What is `Annotation'?}
+  \begin{itemize}
+  \item Genes -- classification schemes (e.g., Entrez, Ensembl),
+    pathway membership, \ldots
+  \item Genomes -- reference genomes; exons, transcripts, coding
+    sequence; coding consequences
+  \item System / network biology -- pathways, biochemical reactions,
+    \ldots
+  \item `Consortium' resources, TCGA, ENCODE, dbSNP, GTEx, \ldots
+  \end{itemize}
+  Other defintions (not covered here)
+  \begin{itemize}
+  \item SNP (and similar) consequences (\Biocpkg{VariantAnnotation},
+    \Biocpkg{VariantFiltering}, \Biocpkg{ensemblVEP})
+  \item Assign function to novel sequences
+  \item \ldots
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\Bioconductor{} Annotation Resources -- Packages}
+  Model organism annotation packages
+  \begin{itemize}
+  \item \Rpackage{org.*} -- gene names and pathways
+  \item \Rpackage{TxDb.*} -- gene models
+  \item \Rpackage{BSgenome.*} -- whole-genome sequences
+  \end{itemize}
+\end{frame}
+
+\section{Gene and pathway annotations}
+
+\begin{frame}[fragile]{\Rpackage{org.*} packages}
+  The `select' interface:
+  \begin{itemize}
+  \item Discovery: \Rfunction{keytypes}, \Rfunction{columns}, \Rfunction{keys}
+  \item Retrieval: \Rfunction{select}
+  \end{itemize}
+<<select, eval=FALSE>>=
+library(org.Hs.eg.db)
+keytypes(org.Hs.eg.db)
+columns(org.Hs.eg.db)
+egid <- 
+  select(org.Hs.eg.db, "BRCA1", "ENTREZID", "SYMBOL")
+@ 
+\end{frame}
+
+\begin{frame}{\Rpackage{org.*} (and other annotation) packages --
+    Under the hood\ldots}
+  SQL (sqlite) data bases
+  \begin{itemize}
+  \item \Rcode{org.Hs.eg\_dbconn()} to query using \Rpkg{RSQLite}
+    package
+  \item \Rcode{org.Hs.eg\_dbfile()} to discover location and query
+    outside \R{}.
+  \end{itemize}
+\end{frame}
+
+\section{Genomes and genome coordinates}
+
+\begin{frame}[fragile]{\Rpackage{TxDb.*} packages}
+  \begin{itemize}
+  \item Gene models for common model organsisms / genome builds /
+    known gene schemes
+  \item Supports the `select' interface (\Rfunction{keytypes},
+    \Rfunction{columns}, \Rfunction{keys}, \Rfunction{select})
+  \item `Easy' to build custom packages when gene model exist
+  \end{itemize}
+  Retrieving genomic ranges
+  \begin{itemize}
+  \item \Rfunction{transcripts}, \Rfunction{exons}, \Rfunction{cds},
+  \item \Rfunction{transcriptsBy} , \Rfunction{exonsBy},
+    \Rfunction{cdsBy} -- group by gene, transcirpt, etc.
+  \end{itemize}
+<<cdsBy, eval=FALSE>>=
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+cdsByTx <- cdsBy(txdb, "tx")
+@ 
+\end{frame}
+
+\begin{frame}[fragile]{Example: Visualize BRCA1 Transcripts}
+<<BRCA1, warning=FALSE>>=
+library(org.Hs.eg.db)
+eid <- mapIds(org.Hs.eg.db, "BRCA1", "ENTREZID", 
+  "SYMBOL")
+
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+txid <- select(txdb, eid, "TXNAME", "GENEID")[["TXNAME"]]
+cds <- cdsBy(txdb, by="tx", use.names=TRUE)
+brca1cds <- cds[names(cds) %in% txid]
+
+library(Gviz)
+tx <- rep(names(brca1cds), elementLengths(brca1cds))
+id <- unlist(brca1cds)$cds_id
+grt <- GeneRegionTrack(brca1cds, name="BRCA1", id=tx,
+  gene="BRCA1", feature=tx, transcript=tx, exon=id)
+plotTracks(list(GenomeAxisTrack(), grt))
+@ 
+\end{frame}
+
+\begin{frame}{Example: Visualize BRCA1 Transcripts}
+  \includegraphics[width=\textwidth]{our_figures/BRCA1CDS.pdf}
+\end{frame}
+
+\begin{frame}[fragile]{\Rpackage{BSgenome.*} Packages: Whole-Genome Sequences}
+  \begin{itemize}
+  \item `Masks' when available, e.g., repeat regions
+  \item Load chromosomes, range-based queries: \Rfunction{getSeq},
+    \Rfunction{extactTranscriptSeqs}
+  \end{itemize}
+<<extactTranscriptsFromGenome>>=
+library(BSgenome.Hsapiens.UCSC.hg19)
+extractTranscriptSeqs(Hsapiens, brca1cds)
+@ 
+\end{frame}
+
+\section{Web-based resources}
+
+\begin{frame}{Web-based resources}
+  \begin{tabular}{ll}
+    \Biocpkg{AnnotationHub} & Ensembl, Encode, dbSNP, UCSC data objects, \ldots                    \\
+    \Biocpkg{biomaRt}       & Ensembl and other annotations, \href{http://biomart.org}{url}        \\
+    \Biocpkg{PSICQUIC}      & Protein interactions, \href{https://code.google.com/p/psicquic}{url} \\
+    \Biocpkg{uniprot.ws}    & Protein annotations, \href{http://uniprot.org}{url}                  \\
+    \Biocpkg{KEGGREST}      & KEGG pathways, \href{http://www.genome.jp/kegg}{url}                 \\
+    \Biocpkg{SRAdb}         & Sequencing experiments, \href{http://www.ncbi.nlm.nih.gov/sra}{url}  \\
+    \Biocpkg{rtracklayer}   & genome tracks, \href{http://genome.ucsc.edu}{url}                    \\
+    \Biocpkg{GEOquery}      & Array and other data,  \href{http://www.ncbi.nlm.nih.gov/geo/}{url}  \\
+    \Biocpkg{ArrayExpress}  & Array and other data, \href{http://www.ebi.ac.uk/arrayexpress/}{url}
+  \end{tabular}
+\end{frame}
+
+\begin{frame}{Web-based resources}
+  Demo
+\end{frame}
+
+\section{Conclusions}
+
+\begin{frame}{Summary}
+  Genes
+  \begin{itemize}
+  \item \Rpackage{org.*} packages, \Rcode{columns()}, \Rcode{keys()},
+    \Rcode{mapIds()}, \Rcode{select()}.
+  \end{itemize}
+  Genomes
+  \begin{itemize}
+  \item \Rpackage{TxDb.*} packages. \Rcode{select()}, \Rcode{exons()},
+    \Rcode{exonsBy()} \& friends.
+  \item \Rpackage{BSgenome.*} packages. \Rcode{FaFile},
+    \Rcode{TwoBitFile} files.
+  \end{itemize}
+  Variants
+  \begin{itemize}
+  \item \Biocpkg{VariantAnnotation}, \Biocpkg{VariantFiltering},
+    \Biocpkg{ensemblVEP}.
+  \end{itemize}
+  Web-based resources
+  \begin{itemize}
+  \item \Biocpkg{biomaRt}, \Biocpkg{AnnotationHub}, and others.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Acknowledgments}
+  \begin{itemize}
+  \item Core (Seattle): \textbf{Sonali Arora}, Marc Carlson, Nate Hayden,
+    Valerie Obenchain, Herv\'e Pag\`es, Paul Shannon, Dan Tenenbaum.
+  \item The research reported in this presentation was supported by
+    the National Cancer Institute and the National Human Genome
+    Research Institute of the National Institutes of Health under
+    Award numbers U24CA180996 and U41HG004059, and the National
+    Science Foundation under Award number 1247813. The content is
+    solely the responsibility of the authors and does not necessarily
+    represent the official views of the National Institutes of Health
+    or the National Science Foundation.
+  \end{itemize}
+  \medskip\par
+  \href{http://bioconductor.org/BioC2015/}{BioC 2015} Annual
+  Conference, Seattle, WA, 20-22 July.
+\end{frame}
+
+\end{document}

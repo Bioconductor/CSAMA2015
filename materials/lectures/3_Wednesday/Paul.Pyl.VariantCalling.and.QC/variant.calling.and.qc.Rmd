@@ -45,6 +45,35 @@ T         |  0 |  0 |  9 |  0 |  0 | 10 |  0 |  0 |  *1* |  0 |  0 |  1 |
 
 ![h5vc][h5vc]
 
+## Indel Realignment
+This is an important step, since small InDels can cause sporadic false-positive SNV calls.
+
+![indelrln][indelrln]
+
+GATK provides a good implementation.
+
+## Somatic Variants vs. Germline Variants
+
+When dealing with paired cancer samples we ask:
+
+* What are the variants that the person is carrying (germline variants)?
+* What are the variants that the cancer is carrying (somatic variants)?
+* Which somatic variants are causal to the cancer development / progression (driver variants)?
+* Which somatic variants are a byproduct of genomic instability (passenger variants)?
+
+## You've gotten some variants, now what? 
+
+* Visualising them helps to spot weird patterns
+* Annotate them to gain extra information, e.g. population frequencies, SIFT scores, affected genes and type of mutation (missense, nonsense, stop gain, ...)
+
+## Telling the good from the bad
+
+![GoodSNV][good]
+
+## Telling the good from the bad
+
+![BadSNV][bad]
+
 ## Certainty and Sequencing Depth
 In Diploid Organisms heterozygous variants should be observed with an average frequency of $0.5$, i.e. $50\%$ of the reads overlapping the position should show the variant allele.
 
@@ -83,27 +112,6 @@ renderPlot({
 })
 ```
 
-## Somatic Variants vs. Germline Variants
-
-When dealing with paired cancer samples we ask:
-
-* What are the variants that the person is carrying (germline variants)?
-* What are the variants that the cancer is carrying (somatic variants)?
-* Which somatic variants are causal to the cancer development / progression (driver variants)?
-* Which somatic variants are a byproduct of genomic instability (passenger variants)?
-
-## You've gotten some variants, now what? 
-
-* Visualising them helps to spot weird patterns
-* Annotate them to gain extra information, e.g. population frequencies, SIFT scores, affected genes and type of mutation (missense, nonsense, stop gain, ...)
-
-## Telling the good from the bad
-
-![GoodSNV][good]
-
-## Telling the good from the bad
-
-![BadSNV][bad]
 
 ## Telling the good from the bad
 <div style="width: 80%; margin: auto;">
@@ -191,13 +199,27 @@ We use the SIFT and PolyPhen scores to asses how damaging a variant is.
 - If a position can be mutated a lot in homologous genes, it is less likely to be important for the gene function
 
 ## Ensembl VEP - Known Variants
-dbSNP:
+[dbSNP](http://www.ncbi.nlm.nih.gov/SNP/):
 
 - for population variants (Single Nucleotide **Polymorphisms**)
+- allelic frequencies in populations
+- experiments, references, ...
 
-COSMIC:
+[COSMIC](http://cancer.sanger.ac.uk/cosmic):
 
 - for somatic variants reported in cancer studies
+- gene-level overviews
+- list with published somatic variants
+    - references, experiments, ...
+
+## Ensembl VEP - COSMIC
+
+![tp53][tp53]
+
+## Ensembl VEP - dbSNP
+
+![dbSNP][dbSNP]
+
 
 ## The End
 
@@ -254,3 +276,6 @@ print(pll)
 [notSoNice]: Illustrations/not.so.nice.tiff "A Bad Variant"
 [horrible]: Illustrations/patently.horrible.png "A Very Bad Variant"
 [h5vc]: Illustrations/h5vc.png "The h5vc Paper"
+[indelrln]: Illustrations/InDelRealign.png "Indel Realignment"
+[tp53]: Illustrations/tp53.cosmic.png "TP53 of Cosmic"
+[dbSNP]: Illustrations/dbSNP.png "dbSNP example"

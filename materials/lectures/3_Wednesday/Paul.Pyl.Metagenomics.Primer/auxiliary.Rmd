@@ -1,0 +1,50 @@
+
+## Data Exploration {.smaller}
+Heatmap of some samples and OTU abundances
+```{r, echo=FALSE, message=FALSE, eval = FALSE}
+require(DESeq2)
+require(RColorBrewer)
+s <- sample(x = 1200, size = 30)
+otu <- fetchAbundance(file, study, type = "Relative", entity = "OTU")
+#x <- varianceStabilizingTransformation(floor(otu[,s]))
+x <- log10(otu[,s] + 1e-12)
+rownames(x) <- otuAnnotation$Name
+heatmap(x[rowSums(otu[,s]) != 0,], ColSideColors = brewer.pal(7, name = "Set1")[as.numeric(factor(sampleAnnotation$SRAStudy[s]))], Rowv = NA, Colv = NA)
+```
+
+
+```{r, echo = FALSE, eval=FALSE}
+source("biom.hdf5.hacks.r") # ugly hacks because of compatibility issues
+bees <- biom(read_hdf5_biom("15_otu_table.biom"))
+beeSamples <- import_qiime_sample_data("beeSamples.txt")
+biom::write_biom(bees, biom_file = "bees.biom")
+bees <- import_biom("bees.biom")
+Bees <- merge_phyloseq(bees, beeSamples)
+save(Bees, file = "bees.RDa")
+```
+
+Filtering a bit:
+  
+```{r}
+require(phyloseq)
+require(ggplot2)
+load(file = "bees.RDa")
+Bees = prune_taxa(taxa_sums(Bees) > 0, Bees)
+Bees = prune_samples(sample_sums(Bees) > 100, Bees)
+Bees = prune_samples(sample_data(Bees)$age != "unknown", Bees)
+sample_data(Bees)$age <- factor(sample_data(Bees)$age, levels = 1:30, ordered = TRUE)
+```
+
+```{r}
+data("GlobalPatterns")
+gpt <- subset_taxa(GlobalPatterns, Kingdom=="Bacteria")
+gpt <- prune_taxa(names(sort(taxa_sums(gpt),TRUE)[1:300]), gpt)
+p <- plot_heatmap(gpt, sample.label="SampleType")
+png("hmap.png", units = "px", width = 800, height = 500)
+print(p + theme(axis.text.x = element_text( size = 16, angle = 45, hjust = 1, vjust = 1)))
+dev.off()
+
+p
+
+plot_richness(gpt, color = "SampleType", measures = "Shannon") + geom_point(size = 5) + theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```

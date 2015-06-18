@@ -63,6 +63,14 @@ ex
 hist(letterFrequency(ex, "GC", as.prob=TRUE))
 ```
 
+Eagle-eyed audience members noted that the first and last exon were
+the same widht, and share many nucleotides. Mike Love notes that these
+exons are from genes in the DDX11L1 family, which occurs in
+subtelomeres, where. duplication is not surprising because of telomere
+sequence similarity. This
+[paper](http://www.biomedcentral.com/1471-2164/10/250) provides some
+context.
+
 ## Roadmap epigenomics BED files
 
 From the vignette [_AnnotationHub_ How-To's](http://bioconductor.org/packages/devel/bioc/vignettes/AnnotationHub/inst/doc/AnnotationHub-HOWTO.html)
@@ -104,6 +112,6 @@ See exercise in Lab 1.3.
 
 ## Working with Hits object
 
-## Genes nearest transcription factor binding sites
-
-## Restriction and iteration through FASTQ files
+See the "Working with dbSNP Variants" section of the
+[_AnnotationHub_ How-To](http://bioconductor.org/packages/devel/bioc/vignettes/AnnotationHub/inst/doc/AnnotationHub-HOWTO.html#working-with-dbsnp-variants)
+vignette.

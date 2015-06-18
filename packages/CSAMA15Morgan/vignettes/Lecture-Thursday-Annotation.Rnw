@@ -68,7 +68,7 @@ suppressPackageStartupMessages({
   The `select' interface:
   \begin{itemize}
   \item Discovery: \Rfunction{keytypes}, \Rfunction{columns}, \Rfunction{keys}
-  \item Retrieval: \Rfunction{select}
+  \item Retrieval: \Rfunction{select}, \Rfunction{mapIds}
   \end{itemize}
 <<select, eval=FALSE>>=
 library(org.Hs.eg.db)

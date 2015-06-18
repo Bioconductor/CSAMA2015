@@ -1,0 +1,101 @@
+---
+title: "Plotting Regions from BAM files directly"
+author: "Paul Theodor Pyl"
+date: "18 Jun 2015"
+output: html_document
+---
+
+## Setting Up
+
+First we will need to get some R packages from the local repository (At home we can just use `biocLite` to install those).
+
+```{r, eval = FALSE}
+source("http://192.168.0.9/setRepos.R") 
+install.packages(c("h5vc", "h5vcData"))
+install.packages("BSgenome.Hsapiens.NCBI.GRCh38") # We need this genome to define our reference, you should use a genome that corresponds to the bam files you want to use
+```
+
+Typically an HDF5 tally file will store the nucleotide tally data and the accompanying sample data and the functions for plotting defined in the `h5vc` package are. If we do not want to create an HDF5 file representation of our data, we can define a new function that makes sure that the data and sample data are present in the correct format.
+
+First we load the required packages, `h5vc` for plotting and `BSgenome.Hsapiens.NCBI.GRCh38` to provide the reference genome sequence. We use `BSgenome.Hsapiens.NCBI.GRCh38` because the example `.bam` files that I will use here are aligned against that revision of the human reference genome. You should use an appropriate genome object here, e.g. if you want to work in *Arabidopsis Thaliana* instead you would maybe use the `BSgenome.Athaliana.TAIR.TAIR9` package instead.
+
+```{r, echo=TRUE, message=FALSE}
+require(h5vc)
+require(BSgenome.Hsapiens.NCBI.GRCh38)
+```
+
+Next we find our example data `.bam` files and create a `sampleData` object that is simply a `data.frame` describing the samples we want to work with.
+
+```{r}
+files <- list.files( system.file("extdata", package = "h5vcData"), "Pt.*bam$" )
+bamFiles <- file.path( system.file("extdata", package = "h5vcData"), files)
+
+sampleData <- data.frame(
+  SampleFiles = files,
+  Sample = sapply(strsplit(files, split = "\\."), function(x) x[1]),
+  Type = rep(c("Case", "Control"), length(files)/2),
+  Column = seq(length(files)),
+  Patient = substr(files, 1, 4),
+  stringsAsFactors = FALSE #Silly, but important to get the track labels right
+  )
+
+sampleData
+```
+
+## Defining the plotting function
+
+Finally we define the `plotBAMs` function that will take a `GRanges` object describing the genomic intervals we want to plot, the list of `.bam` files, the `sampleData` object and the reference object (that will be `BSgenome.Hsapiens.NCBI.GRCh38` in our case).
+
+```{r}
+plotBAMs <- function( ranges, bamFiles, sampleData, reference){
+  require(h5vc)
+  theData <- tallyRanges( bamFiles, ranges = ranges, reference = reference )
+  for( idx in seq(length(ranges))){ # This is needed since we dont use HDF5 to store the data
+    theData[[idx]]$h5dapplyInfo <- list( Blockstart = start(ranges[idx]), Blockend = end(ranges[idx]))
+  }
+  mismatchPlot(
+    theData, sampleData
+    )
+}
+```
+
+## Creating plots of example data for the DNMT3A gene
+
+Here we define the genomic ranges we will want to plot, they correspond to exons of the DNMT3A gene in our example. The `GRanges` should come from a VCF file with variant calls when we want to visualise variant calls, but for the sake of this example the DNMT3A exons will suffice.
+
+```{r}
+require(GenomicRanges)
+dnmt3a <- read.table(system.file("extdata", "dnmt3a.txt", package = "h5vcData"), header=TRUE, stringsAsFactors = FALSE)
+dnmt3a <- with( dnmt3a, GRanges(seqname, ranges = IRanges(start = start, end = end)))
+dnmt3a <- reduce(dnmt3a)
+dnmt3a
+```
+
+Let's plot some DNMT3A exons  (2,3 and 4) in the first 4 samples (the object `Hsapiens` is defined in the `BSgenome.Hsapiens.NCBI.GRCh38` package and contains the genomic reference sequence2):
+
+```{r}
+p <- plotBAMs(
+  ranges = dnmt3a[2:4],
+  bamFiles = bamFiles[1:4],
+  sampleData = sampleData[1:4,],
+  reference = Hsapiens
+  )
+print(p)
+```
+
+`p` is a ggplot object, so we can modify how it looks by adding theme commands and so on:
+```{r}
+print(p + theme(text = element_text(colour = "hotpink"))) 
+```
+
+Hmm, maybe making the text pink wasn't the best idea, let's try something else:
+
+```{r, fig.height=10, fig.width=16}
+print(p + theme(text = element_text(size = 16), axis.text.x = element_text(angle = 45, size = 12, vjust = 1, hjust = 1), panel.margin.x = unit(1, units = "cm"))) 
+```
+
+## Exercises
+
+1. Apply your knowledge of creating shiny apps to create a browser-app. This app should let you select which samples and exons (of DNMT3A) should be plotted and then display the selected region.
+2. Use your knowledge of the `VariantAnnotation` package to implement a shiny app or set of functions that loads a VCF file and plots ranges around the variants. You might need a set of appropriate `.bam` files to do this, i.e. `.bam` files that contain the data that gave rise to the variant calls in your VCF file.
+

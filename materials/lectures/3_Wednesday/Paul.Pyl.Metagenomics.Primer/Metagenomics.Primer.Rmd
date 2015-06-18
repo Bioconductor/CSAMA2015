@@ -94,7 +94,7 @@ Whole Metagenome Sequencing (WMGS) is the sequencing of all DNA found in a sampl
 - biom: for reading in BIOM-formatted files (**doesn't work with the newer HDF5-based version**)
 - phyloseq: for visualisation and basic analyses
     - provides interface to DESeq2 for differential abundance analysis
-- metagenomeseq: for differential OTU analysis
+- metagenomeSeq: for differential OTU analysis
     - uses a zero-inflated gaussian as the model distribution
 
 ## Reads to Counts
@@ -211,6 +211,7 @@ soilrep | Reproducibility of soil microbiome data (2011)
 ```{r}
 data(GlobalPatterns)
 class(GlobalPatterns)
+GlobalPatterns
 ```
 
 ## Example Data
@@ -234,6 +235,37 @@ Objects of the `phyloseq`-class can be accessed, visualised and modified in many
 ## Example Data
 ```{r, echo=FALSE}
 plot_ordination(gpt, ordinate(gpt, method = "PCoA"), color = "SampleType") + geom_point(size = 6)
+```
+
+## Example Data
+```{r, echo=FALSE}
+tmp <- subset_samples(gpt, !(SampleType %in% c("Feces", "Mock")))
+plot_ordination(tmp, ordinate(tmp, method = "PCoA"), color = "SampleType") + geom_point(size = 6)
+```
+
+## Differential Analyses
+- comparing samples with respect to their bacterial composition
+- comparing samples with respect to their metagenomic gene composition
+- using Metatranscriptomics -> real expression analysis
+- We can apply DESeq2 or edgeR and it works quite well
+- Specialised tool: metagenomeSeq
+
+## metagenomeSeq - Zero-inflated gaussian {.smaller}
+
+Metagenomics data tends to be zero-inflated.
+```{r}
+dim(otu_table(GlobalPatterns))
+```
+
+## metagenomeSeq - Zero-inflated gaussian {.smaller}
+
+```{r, echo=FALSE}
+pd <- data.frame(
+  Zeroes = colSums(otu_table(GlobalPatterns) == 0) / 19216,
+  SampleType = sample_data(GlobalPatterns)$SampleType,
+  SampleID = sample_data(GlobalPatterns)$X.SampleID
+  )
+ggplot(pd) + geom_histogram(aes(x = SampleID, y = Zeroes, fill = SampleType), stat = "identity") + theme_bw() + ylim(0,1) + geom_hline(aes(yintercept = 1)) + theme(text = element_text(family = "Monaco", size = 14), axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9))
 ```
 
 ## The End

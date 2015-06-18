@@ -1,0 +1,43 @@
+---
+title: "Phyloseq Basic Usage for Metagenomics"
+author: "Paul Theodor Pyl"
+date: "18 Jun 2015"
+output: html_document
+---
+
+# Basic Concepts of using Phyloseq
+The `phyloseq` package provides many functions for exploring and visualising metagenomics data and we will work through two of the vignettes provided by the package authors today.
+
+A copy of the R source code from the vignettes is available to you in the `labs/5_Friday` foler, so you can retrace the steps shown in the vignettes.
+
+To find out more about the packge, have a look at the package landing page on the [Bioconductor](http://www.bioconductor.org/packages/release/bioc/html/phyloseq.html) website.
+
+## Set-Up
+If we don't have the appropriate packages intalled yet, we will do so now from the local repository (At home we can just use `biocLite` to install those).
+
+```{r, eval = FALSE}
+source("http://192.168.0.9/setRepos.R") 
+install.packages(c("phyloseq", "metagenomeSeq"))
+```
+
+## Load the vignettes
+We can have a look at available vignettes by running the followign command:
+```{r, eval=FALSE}
+vignette(package = "phyloseq")
+```
+
+## Analysis examples
+I suggest that we go through the "Phyloseq-Analysis" vignette first, since it allows for a direct "hands-on" exploration of the things we can do with the `phyloseq` package.
+
+```{r, eval=FALSE}
+vignette("phyloseq-analysis")
+```
+
+A .pdf copy of the paper correspoding to the `GlobalPatterns` example dataset is provided in the course materials today, it is referenced in the vignette from time to time and you can use it to compare your plots with the plots from the paper.
+
+## DESeq Example
+As a second step we can work through the `phyloseq-mixture-models` vignette from the `phyloseq` paper, which will give us an introduction on how to use `DESeq2`.
+
+```{r, eval=FALSE}
+vignette("phyloseq-mixture-models")
+```

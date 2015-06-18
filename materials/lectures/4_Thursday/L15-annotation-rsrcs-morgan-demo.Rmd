@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
 ```
 
 ```{r setup, echo=FALSE}
-knitr::opts_chunk$set(cache=TRUE)
+#knitr::opts_chunk$set(cache=TRUE)
 ```
 
 Authors: Martin Morgan (<a

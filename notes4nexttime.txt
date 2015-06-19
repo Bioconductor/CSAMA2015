@@ -1,5 +1,19 @@
 Vince's clustering & classification lecture needs more time than 45 min. 90 min?
 Wolfgang's testing & mult. testing lecture needs more time than 45 min. 60 min?
-Someone suggest a 'biology' lecture: from DNA to phenotype (via chromatin, transcription, translation, proteins, cell types, ...) (a la Aleks)
+
+Someone suggested a 'biology' lecture: from DNA to phenotype (via chromatin, transcription, translation, proteins, cell types, ...) (a la Aleks)
+
+Review file formats, e.g. gtf, and data types e.g. txdb
+
+How to do a lab? I.e. what to do when you get stuck. Finding help on what the fuctions/arguments actually do. Exploring the workspace. Understand error messages, check for parentheses etc.
+Provide .Rproj files for labs so people find files 
+An "Advanced R" lab that is really intro.
+
+Each lab should state the objectives, and summarise the learned steps.
+
+Interactive session e.g. like what Vince prepared this time.
 
 Need to arrive earlier up on Plose - e.g. 16.00 at top cable car for dinner at 19.00h
+
+
+Suggestion: mix essential hard-core lectures (DESeq, stats, ...) with more relaxed/general interest topics such as metagenomics and proteomics to make some mornings lighter.

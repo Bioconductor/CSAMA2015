@@ -17,3 +17,5 @@ structure
     CSAMA2015/materials/labs/1_Monday/<lab manuals and modest data>
 
 ,etc
+
+CSAMA stands for Computational Statistics Applied to Multi-Omics Assays

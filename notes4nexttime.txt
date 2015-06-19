@@ -17,3 +17,6 @@ Need to arrive earlier up on Plose - e.g. 16.00 at top cable car for dinner at 1
 
 
 Suggestion: mix essential hard-core lectures (DESeq, stats, ...) with more relaxed/general interest topics such as metagenomics and proteomics to make some mornings lighter.
+
+
+Computational statistics aspects (advances) for multi-omic assays

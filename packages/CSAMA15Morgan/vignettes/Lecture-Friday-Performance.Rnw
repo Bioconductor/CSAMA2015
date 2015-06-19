@@ -9,7 +9,7 @@
   Fred Hutchinson Cancer Research Center \\
   Seattle, WA, USA
 }
-\date{18 June, 2015}
+\date{19 June, 2015}
 
 <<setup, echo=FALSE>>=
 options(width=50, max.print=1000, showTailLines=2, showHeadLines=3)
@@ -60,17 +60,17 @@ suppressPackageStartupMessages({
   \begin{enumerate}
   \item Unnecessary iteration
 <<unnecessary-iteration>>=
-x <- 1:10; for (i in seq_along(x)) x[i] = log(x[i])
+x <- 1:10000; for (i in seq_along(x)) x[i] = log(x[i])
 @ 
   \item Copy-and-append iteration
 <<copy-and-append>>=
 answer <- numeric()
-for (i in 1:10) answer <- c(answer, 1/i)
-for (i in 1:10) answer[i] <- 1/i
+for (i in 1:10000) answer <- c(answer, 1/i)
+for (i in 1:10000) answer[i] <- 1/i
 @ 
   \item Unneccessary evaluation
 <<evaluation>>=
-x <- 1:10
+x <- 1:1000000
 for (i in seq_along(x)) x[i] = x[i] * sqrt(2)
 @     
   \item Re-implementation
@@ -164,7 +164,7 @@ identical(res1, res2)
   \item Use a data base, hdf5, or other file format that allows
     queries or slices of the data to be imported.
   \end{itemize}
-  \emph{Iterater} through files to manage memory use
+  \emph{Iterate} through files to manage memory use
   \begin{itemize}
   \item File connections in base R
   \item \Rcode{BamFile("my.bam", yieldSize=1000000)}
@@ -191,8 +191,37 @@ map <- function(aln) { # GC content, bin & cummulate
 reduce <- `+`
     
 gc <- bplapply(bfls, reduceByYield, yield, map, reduce)
-gc <- simplify2array(gc)
 @   
 \end{frame}
 
+\begin{frame}{Summary}
+  \begin{itemize}
+  \item \textbf{Correct} first, performance second
+  \item No need to worry about code that doesn't take very long!
+  \item `Embarassingly' parallel (\Rcode{lapply()}-like) problems
+    easily parallelized, especially on a single computer.
+  \item Opportunity for very scalable computations, e.g., via AMI \&
+    StarCluster.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Acknowledgments}
+  \begin{itemize}
+  \item Core (Seattle): Sonali Arora, Marc Carlson, Nate Hayden,
+    Valerie Obenchain, Herv\'e Pag\`es, Paul Shannon, Dan Tenenbaum.
+  \item The research reported in this presentation was supported by
+    the National Cancer Institute and the National Human Genome
+    Research Institute of the National Institutes of Health under
+    Award numbers U24CA180996 and U41HG004059, and the National
+    Science Foundation under Award number 1247813. The content is
+    solely the responsibility of the authors and does not necessarily
+    represent the official views of the National Institutes of Health
+    or the National Science Foundation.
+  \end{itemize}
+  \medskip\par
+  \href{http://bioconductor.org/BioC2015/}{BioC 2015} Annual
+  Conference, Seattle, WA, 20-22 July.
+\end{frame}
+
 \end{document}
+

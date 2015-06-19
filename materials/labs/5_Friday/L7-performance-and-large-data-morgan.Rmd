@@ -419,8 +419,11 @@ but you do not understand, e.g., `?ScanBamParam()`.
 
 ```{r yield}
 library(GenomicAlignments)
-yield <- function(bfl) # input a chunk of alignments
+yield <- function(bfl) {
+    ## input a chunk of alignments
+    library(GenomicAlignments)
     readGAlignments(bfl, param=ScanBamParam(what="seq"))
+}
 ```
 
 Next we'll transform our aligned reads to GC content. We will do this

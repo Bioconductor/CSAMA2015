@@ -2,7 +2,7 @@
 BiocStyle::markdown()
 
 ## ----setup, echo=FALSE---------------------------------------------------
-##knitr::opts_chunk$set(cache=TRUE)
+# knitr::opts_chunk$set(cache=TRUE)
 
 ## ----vectorize-----------------------------------------------------------
 x <- 1:10
@@ -170,8 +170,11 @@ bfls <- BamFileList(fls, yieldSize=100000)
 
 ## ----yield---------------------------------------------------------------
 library(GenomicAlignments)
-yield <- function(bfl) # input a chunk of alignments
+yield <- function(bfl) {
+    ## input a chunk of alignments
+    library(GenomicAlignments)
     readGAlignments(bfl, param=ScanBamParam(what="seq"))
+}
 
 ## ----map-----------------------------------------------------------------
 library(Biostrings)

@@ -380,8 +380,11 @@ fls &lt;- RNAseqData.HNRNPC.bam.chr14_BAMFILES</code></pre>
 bfls &lt;- BamFileList(fls, yieldSize=100000)</code></pre>
 <p>Each time we read from a BAM file, we’ll input the next 100,000 records. We’ll adopt our second strategy for managing memory by <em>restricting</em> the data read from the BAM file to that necessary to calculate GC content, specifically the DNA sequence of each read, in addition to its alignment coordinates. We’ll do this by writing a function <code>yield()</code> that uses <code>GenomicFiles::readGAlignments()</code> to input the required data; see the help pages for functions that we use but you do not understand, e.g., <code>?ScanBamParam()</code>.</p>
 <pre class="r"><code>library(GenomicAlignments)
-yield &lt;- function(bfl) # input a chunk of alignments
-    readGAlignments(bfl, param=ScanBamParam(what=&quot;seq&quot;))</code></pre>
+yield &lt;- function(bfl) {
+    ## input a chunk of alignments
+    library(GenomicAlignments)
+    readGAlignments(bfl, param=ScanBamParam(what=&quot;seq&quot;))
+}</code></pre>
 <p>Next we’ll transform our aligned reads to GC content. We will do this using <code>Biostrings::letterFrequency()</code> to count the fraction of G’s or C’s in each read, tabulate these into 2.5-percentile bins, and calculate the cummulative number of reads in each bin.</p>
 <pre class="r"><code>library(Biostrings)
 map &lt;- function(aln) { # GC content, bin &amp; cummulate

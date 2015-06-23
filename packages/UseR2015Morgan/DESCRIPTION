@@ -1,8 +1,8 @@
-Package: CSAMA15Morgan
+Package: UseR2015Morgan
 Version: 0.0.2
-Title: CSAMA 2015 Lab and Lecture Resources for Martin Morgan
+Title: UseR!2015 Lab and Lecture Resources for Martin Morgan
 Description: This package contains lab and lecture vignettes, data,
-    and short functions for use in parts of the CSAMA 2015 course lead
+    and short functions for use in parts of the UseR!2015 course led
     by Martin Morgan.
 Authors@R: c(
     person("Martin", "Morgan", email="mtmorgan@fredhutch.org", role="cre"),
@@ -10,5 +10,3 @@ Authors@R: c(
 Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
 License: Artistic-2.0
-URL: http://www.huber.embl.de/csama/,
-    https://github.com/Bioconductor/CSAMA2015

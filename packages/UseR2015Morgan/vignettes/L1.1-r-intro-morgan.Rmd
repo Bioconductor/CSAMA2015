@@ -173,7 +173,7 @@ abline(fit, col="red", lwd=3, lty=2) # a function, not generic.method
 Programming example -- group 1000 SYMBOLs into GO identifiers
 
 ```{r lapply-setup, echo=FALSE}
-fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+fl <- system.file(package="UseR2015Morgan", "extdata", "symgo.csv")
 ```
 ```{r lapply-user-setup, eval=FALSE}
 ## example data
@@ -223,7 +223,7 @@ stopifnot(file.exists(fname))
 pdata <- read.delim(fname)
 ```
 ```{r echo=FALSE}
-fname <- system.file(package="CSAMA15Morgan", "extdata",
+fname <- system.file(package="UseR2015Morgan", "extdata",
     "ALLphenoData.tsv")
 stopifnot(file.exists(fname))
 pdata <- read.delim(fname)
@@ -335,7 +335,7 @@ stopifnot(file.exists(fname))
 brfss <- read.csv(fname)
 ```
 ```{r echo=FALSE}
-fname <- system.file(package="CSAMA15Morgan", "extdata",
+fname <- system.file(package="UseR2015Morgan", "extdata",
     "BRFSS-subset.csv")
 stopifnot(file.exists(fname))
 brfss <- read.csv(fname)

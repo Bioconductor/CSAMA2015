@@ -91,7 +91,7 @@ ggplot(df, aes(x, y)) +
 \end{frame}
 
 %% <<symgo-input, echo=FALSE>>=
-%% fl <- system.file(package="CSAMA15Morgan", "extdata", "symgo.csv")
+%% fl <- system.file(package="UseR2015Morgan", "extdata", "symgo.csv")
 %% @ 
 
 %% \begin{frame}[fragile]{\R: Statistical Computing Environment}
